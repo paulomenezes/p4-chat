@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -205,6 +206,27 @@ body {
     background-repeat: repeat;
     background-size: 96px 96px;
   }
+
+  .prose.prose-pink {
+    --tw-prose-td-borders: #eadef7;
+    --tw-prose-th-borders: #d8c3ef;
+    --tw-prose-pre-bg: #563271;
+    --tw-prose-pre-code: #f2ebfa;
+    --tw-prose-code: #492c61;
+    --tw-prose-captions: #7b44ab;
+    --tw-prose-quote-borders: #c4739d;
+    --tw-prose-quotes: #492c61;
+    --tw-prose-hr: #d8c3ef;
+    --tw-prose-bullets: #c4739d;
+    --tw-prose-counters: #c4739d;
+    --tw-prose-bold: #492c61;
+    --tw-prose-lead: #7b44ab;
+    --tw-prose-headings: #563271;
+    --tw-prose-body: #492c61;
+    --tw-prose-links: #da006b;
+    --tw-prose-kbd-shadows: #501854;
+    --tw-prose-kbd: #111827;
+  }
 }
 
 @layer utilities {
@@ -244,5 +266,17 @@ body {
 
   .pb-safe-offset-3 {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  }
+
+  .pt-safe-offset-10 {
+    padding-top: calc(env(safe-area-inset-top) + 2.5rem);
+  }
+
+  .prose :where(.prose > :last-child):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+    margin-bottom: 0;
+  }
+
+  .prose :where(.prose > :first-child):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+    margin-top: 0;
   }
 }

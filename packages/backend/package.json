@@ -14,6 +14,7 @@
   "dependencies": {
     "@auth/core": "0.37.0",
     "@convex-dev/auth": "^0.0.87",
+    "@convex-dev/persistent-text-streaming": "^0.2.3",
     "convex": "^1.23.0"
   }
 }

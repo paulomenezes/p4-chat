@@ -1,22 +1,5 @@
 {
   "name": "p4-chat",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "check": "prettier --check .",
-    "prepare": "husky",
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "check-types": "turbo check-types",
-    "dev:native": "turbo -F native dev",
-    "dev:web": "turbo -F web dev",
-    "dev:server": "turbo -F @p4-chat/backend dev",
-    "dev:setup": "turbo -F @p4-chat/backend setup"
-  },
-  "dependencies": {},
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
@@ -28,5 +11,21 @@
       "prettier --write ."
     ]
   },
-  "packageManager": "bun@1.2.10"
+  "packageManager": "bun@1.2.10",
+  "private": true,
+  "scripts": {
+    "check": "prettier --check .",
+    "prepare": "husky",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F @p4-chat/backend dev",
+    "dev:setup": "turbo -F @p4-chat/backend setup"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }
