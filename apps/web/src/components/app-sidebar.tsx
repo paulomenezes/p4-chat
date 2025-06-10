@@ -1,14 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { LogInIcon, PinIcon, PinOffIcon, SearchIcon, XIcon } from 'lucide-react';
+import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import Image from 'next/image';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { startOfDay, subDays, isAfter, isSameDay } from 'date-fns';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { ThreadItem } from './thread-item';
@@ -26,6 +26,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { signOut } = useAuthActions();
   const user = useQuery(api.user.currentUser);
   const threads = useQuery(api.theads.getByUserId);
+  const [search, setSearch] = useState('');
 
   const threadsGroups = useMemo(() => {
     if (!threads) {
@@ -38,24 +39,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const last7Days = subDays(today, 7);
     const last30Days = subDays(today, 30);
 
-    return threads.reduce((acc, thread) => {
-      const threadDate = new Date(thread._creationTime);
+    return threads
+      .filter((thread) => thread.title.toLowerCase().includes(search.toLowerCase()))
+      .reduce((acc, thread) => {
+        const threadDate = new Date(thread._creationTime);
 
-      if (thread.pinned) {
-        acc.pinned = [...(acc.pinned || []), thread];
-      } else if (isAfter(threadDate, today) || isSameDay(threadDate, today)) {
-        acc.today = [...(acc.today || []), thread];
-      } else if (isSameDay(threadDate, yesterday)) {
-        acc.yesterday = [...(acc.yesterday || []), thread];
-      } else if (isAfter(threadDate, last7Days)) {
-        acc.last7Days = [...(acc.last7Days || []), thread];
-      } else if (isAfter(threadDate, last30Days)) {
-        acc.last30Days = [...(acc.last30Days || []), thread];
-      }
+        if (thread.pinned) {
+          acc.pinned = [...(acc.pinned || []), thread];
+        } else if (isAfter(threadDate, today) || isSameDay(threadDate, today)) {
+          acc.today = [...(acc.today || []), thread];
+        } else if (isSameDay(threadDate, yesterday)) {
+          acc.yesterday = [...(acc.yesterday || []), thread];
+        } else if (isAfter(threadDate, last7Days)) {
+          acc.last7Days = [...(acc.last7Days || []), thread];
+        } else if (isAfter(threadDate, last30Days)) {
+          acc.last30Days = [...(acc.last30Days || []), thread];
+        }
 
-      return acc;
-    }, {} as ThreadsGroup);
-  }, [threads]);
+        return acc;
+      }, {} as ThreadsGroup);
+  }, [threads, search]);
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -67,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </h1>
         <div className="px-1">
           <Link
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border-reflect button-reflect rounded-lg bg-[rgb(162,59,103)] p-2 font-semibold text-primary-foreground shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 px-4 py-2 w-full select-none text-sm"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border-reflect button-reflect rounded-lg bg-[rgb(162,59,103)] p-2 font-semibold text-primary-foreground shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 px-4 py-2 w-full select-none text-sm"
             href="/"
           >
             <span className="w-full select-none text-center">New Chat</span>
@@ -82,7 +85,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               aria-label="Search threads"
               placeholder="Search your threads..."
               className="w-full bg-transparent py-2 text-sm text-foreground placeholder-muted-foreground/50 placeholder:select-none focus:outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
+
+            {search && (
+              <button className="ml-2 rounded-md p-1 text-muted-foreground hover:bg-muted/40" onClick={() => setSearch('')}>
+                <XIcon className="size-4" />
+              </button>
+            )}
           </div>
         </div>
       </SidebarHeader>

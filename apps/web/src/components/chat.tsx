@@ -9,6 +9,8 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { useQueryState } from 'nuqs';
 import dynamic from 'next/dynamic';
+import { NewChatMessages } from './new-chat-messages';
+import { MoonIcon, Settings2Icon } from 'lucide-react';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
@@ -118,7 +120,6 @@ export function Chat() {
                       if (!inputValue.trim()) return;
 
                       setInputValue('');
-                      console.log('inputValue', inputValue, chatId);
 
                       const { threadId, messageId } = await sendMessage({
                         prompt: inputValue,
@@ -191,67 +192,15 @@ export function Chat() {
           <div className="fixed right-2 top-2 z-20 max-sm:hidden">
             <div className="flex flex-row items-center bg-gradient-noise-top text-muted-foreground gap-0.5 rounded-md p-1 transition-all rounded-bl-xl">
               <a aria-label="Go to settings" role="button" data-state="closed" href="/settings/customization" data-discover="true">
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 size-8 rounded-bl-xl">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-settings2 size-4"
-                  >
-                    <path d="M20 7h-9"></path>
-                    <path d="M14 17H5"></path>
-                    <circle cx="17" cy="17" r="3"></circle>
-                    <circle cx="7" cy="7" r="3"></circle>
-                  </svg>
+                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 size-8 rounded-bl-xl">
+                  <Settings2Icon className="size-4" />
                 </button>
               </a>
               <button
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 group relative size-8"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 group relative size-8"
                 tabIndex={-1}
-                data-state="closed"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-moon absolute size-4 rotate-0 scale-100 transition-all duration-200"
-                >
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-                </svg>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-sun absolute size-4 rotate-90 scale-0 transition-all duration-200"
-                >
-                  <circle cx="12" cy="12" r="4"></circle>
-                  <path d="M12 2v2"></path>
-                  <path d="M12 20v2"></path>
-                  <path d="m4.93 4.93 1.41 1.41"></path>
-                  <path d="m17.66 17.66 1.41 1.41"></path>
-                  <path d="M2 12h2"></path>
-                  <path d="M20 12h2"></path>
-                  <path d="m6.34 17.66-1.41 1.41"></path>
-                  <path d="m19.07 4.93-1.41 1.41"></path>
-                </svg>
+                <MoonIcon className="size-4 rotate-0 scale-100 transition-all duration-200" />
                 <span className="sr-only">Toggle theme</span>
               </button>
             </div>
@@ -263,136 +212,14 @@ export function Chat() {
             className="mx-auto flex w-full max-w-3xl flex-col space-y-12 px-4 pb-10 pt-safe-offset-10"
           >
             {inputValue.length === 0 && messages.length === 0 ? (
-              <div className="flex h-[calc(100vh-20rem)] items-start justify-center">
-                <div className="w-full space-y-6 px-2 pt-[calc(max(15vh,2.5rem))] duration-300 animate-in fade-in-50 zoom-in-95 sm:px-8">
-                  <h2 className="text-3xl font-semibold">How can I help you, Paulo?</h2>
-                  <div className="flex flex-row flex-wrap gap-2.5 text-sm max-sm:justify-evenly">
-                    <button
-                      className="justify-center whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-pink-600/90 disabled:hover:bg-primary h-9 flex items-center gap-1 rounded-xl px-5 py-2 font-semibold outline-1 outline-secondary/70 backdrop-blur-xl data-[selected=false]:bg-secondary/30 data-[selected=false]:text-secondary-foreground/90 data-[selected=false]:outline data-[selected=false]:hover:bg-secondary max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full"
-                      data-selected="false"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-sparkles max-sm:block"
-                      >
-                        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
-                        <path d="M20 3v4"></path>
-                        <path d="M22 5h-4"></path>
-                        <path d="M4 17v2"></path>
-                        <path d="M5 18H3"></path>
-                      </svg>
-                      <div>Create</div>
-                    </button>
-                    <button
-                      className="justify-center whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-pink-600/90 disabled:hover:bg-primary h-9 flex items-center gap-1 rounded-xl px-5 py-2 font-semibold outline-1 outline-secondary/70 backdrop-blur-xl data-[selected=false]:bg-secondary/30 data-[selected=false]:text-secondary-foreground/90 data-[selected=false]:outline data-[selected=false]:hover:bg-secondary max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full"
-                      data-selected="false"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-newspaper max-sm:block"
-                      >
-                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
-                        <path d="M18 14h-8"></path>
-                        <path d="M15 18h-5"></path>
-                        <path d="M10 6h8v4h-8V6Z"></path>
-                      </svg>
-                      <div>Explore</div>
-                    </button>
-                    <button
-                      className="justify-center whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-pink-600/90 disabled:hover:bg-primary h-9 flex items-center gap-1 rounded-xl px-5 py-2 font-semibold outline-1 outline-secondary/70 backdrop-blur-xl data-[selected=false]:bg-secondary/30 data-[selected=false]:text-secondary-foreground/90 data-[selected=false]:outline data-[selected=false]:hover:bg-secondary max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full"
-                      data-selected="false"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-code max-sm:block"
-                      >
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
-                      </svg>
-                      <div>Code</div>
-                    </button>
-                    <button
-                      className="justify-center whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-pink-600/90 disabled:hover:bg-primary h-9 flex items-center gap-1 rounded-xl px-5 py-2 font-semibold outline-1 outline-secondary/70 backdrop-blur-xl data-[selected=false]:bg-secondary/30 data-[selected=false]:text-secondary-foreground/90 data-[selected=false]:outline data-[selected=false]:hover:bg-secondary max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full"
-                      data-selected="false"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-graduation-cap max-sm:block"
-                      >
-                        <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path>
-                        <path d="M22 10v6"></path>
-                        <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
-                      </svg>
-                      <div>Learn</div>
-                    </button>
-                  </div>
-                  <div className="flex flex-col text-foreground">
-                    <div className="flex items-start gap-2 border-t border-secondary/40 py-1 first:border-none">
-                      <button className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3 cursor-pointer">
-                        <span>How does AI work?</span>
-                      </button>
-                    </div>
-                    <div className="flex items-start gap-2 border-t border-secondary/40 py-1 first:border-none">
-                      <button className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3 cursor-pointer">
-                        <span>Are black holes real?</span>
-                      </button>
-                    </div>
-                    <div className="flex items-start gap-2 border-t border-secondary/40 py-1 first:border-none">
-                      <button className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3 cursor-pointer">
-                        <span>How many Rs are in the word "strawberry"?</span>
-                      </button>
-                    </div>
-                    <div className="flex items-start gap-2 border-t border-secondary/40 py-1 first:border-none">
-                      <button className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3 cursor-pointer">
-                        <span>What is the meaning of life?</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <NewChatMessages onSelectMessage={(message) => setInputValue(message)} />
             ) : (
               <>
-                {/* <Message /> */}
                 <div ref={messageContainerRef}>
                   <div>
                     {messages.map((message) => (
                       <Fragment key={message._id}>
                         <Message message={message} />
-                        {/* <MessageItem message={message} isUser={message.role === 'user'}>
-                          <Markdown>{message.content}</Markdown>
-                        </MessageItem> */}
                         {message.responseStreamId && (
                           <ServerMessage
                             message={message}
@@ -410,19 +237,6 @@ export function Chat() {
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
-
-                {/* {messages.map((message) => (
-                  <Message key={message.id} message={message} />
-                  // <div key={message.id} className="whitespace-pre-wrap">
-                  //   {message.role === 'user' ? 'User: ' : 'AI: '}
-                  //   {message.parts.map((part, i) => {
-                  //     switch (part.type) {
-                  //       case 'text':
-                  //         return <div key={`${message.id}-${i}`}>{part.text}</div>;
-                  //     }
-                  //   })}
-                  // </div>
-                ))} */}
               </>
             )}
           </div>
