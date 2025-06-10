@@ -1,10 +1,10 @@
 import { httpAction } from './_generated/server';
 import { internal } from './_generated/api';
-import { StreamId } from '@convex-dev/persistent-text-streaming';
+import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { streamingComponent } from './streaming';
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { Id } from './_generated/dataModel';
+import { type Id } from './_generated/dataModel';
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as {

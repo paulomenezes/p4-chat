@@ -2,7 +2,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { streamingComponent } from './streaming';
-import { StreamId } from '@convex-dev/persistent-text-streaming';
+import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { internal } from './_generated/api';
 
 export const listMessages = query({
