@@ -11,7 +11,7 @@ export const getByUserId = query({
     const userId = await getAuthUserId(ctx);
 
     if (!userId) {
-      throw new Error('Unauthorized');
+      return [];
     }
 
     return await ctx.db
@@ -64,5 +64,60 @@ export const generateThreadTitle = internalAction({
       id: args.threadId,
       title: result.text,
     });
+  },
+});
+
+export const togglePin = mutation({
+  args: {
+    id: v.id('threads'),
+  },
+  handler: async (ctx, { id }) => {
+    const userId = await getAuthUserId(ctx);
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const thread = await ctx.db.get(id);
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    if (thread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    return await ctx.db.patch(id, { pinned: !thread.pinned });
+  },
+});
+
+export const remove = mutation({
+  args: {
+    id: v.id('threads'),
+  },
+  handler: async (ctx, { id }) => {
+    const userId = await getAuthUserId(ctx);
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const thread = await ctx.db.get(id);
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    if (thread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_threadId', (q) => q.eq('threadId', id))
+      .collect();
+
+    await Promise.all([ctx.db.delete(id), ...messages.map((m) => ctx.db.delete(m._id))]);
   },
 });

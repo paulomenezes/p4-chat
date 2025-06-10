@@ -42,13 +42,10 @@ export default function RootLayout({
           `}
           </Script>
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <Providers>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset>{children}</SidebarInset>
-            </SidebarProvider>
-          </Providers>
+        <body
+          className={`proportional-nums selection:bg-primary selection:text-white font-sans ${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <Providers>{children}</Providers>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

@@ -8,6 +8,7 @@ export default defineSchema({
   threads: defineTable({
     title: v.string(),
     userId: v.id('users'),
+    pinned: v.optional(v.boolean()),
   }).index('by_userId', ['userId']),
   messages: defineTable({
     threadId: v.id('threads'),
