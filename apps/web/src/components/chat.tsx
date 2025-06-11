@@ -4,22 +4,24 @@ import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties 
 import { ChatForm } from '@/components/chat-form';
 import { Message } from '@/components/message';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { useQueryState } from 'nuqs';
 import dynamic from 'next/dynamic';
 import { NewChatMessages } from './new-chat-messages';
 import { MoonIcon, Settings2Icon } from 'lucide-react';
+import { useQueryWithStatus } from '@/hooks/use-query';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
-export function Chat() {
+export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
   const [chatId, setChatId] = useQueryState('chat');
 
   const [drivenIds, setDrivenIds] = useState<Set<string>>(new Set());
   const [isStreaming, setIsStreaming] = useState(false);
-  const messages = useQuery(api.messages.listMessages, { threadId: (chatId ?? undefined) as Id<'threads'> | undefined });
+  const messages = useQueryWithStatus(api.messages.listMessages, { threadId: (chatId ?? undefined) as Id<'threads'> | undefined });
+  const sendMessage = useMutation(api.messages.sendMessage);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -43,10 +45,6 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [windowSize, scrollToBottom]);
-
-  const sendMessage = useMutation(api.messages.sendMessage);
-
-  if (!messages) return null;
 
   return (
     <div className="firefox-scrollbar-margin-fix min-h-pwa relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
@@ -211,13 +209,13 @@ export function Chat() {
             aria-live="polite"
             className="mx-auto flex w-full max-w-3xl flex-col space-y-12 px-4 pb-10 pt-safe-offset-10"
           >
-            {inputValue.length === 0 && messages.length === 0 ? (
-              <NewChatMessages onSelectMessage={(message) => setInputValue(message)} />
+            {inputValue.length === 0 && (messages?.data?.length ?? 0) === 0 && (!chatId || messages.isPending === false) ? (
+              <NewChatMessages serverUser={serverUser} onSelectMessage={(message) => setInputValue(message)} />
             ) : (
               <>
                 <div ref={messageContainerRef}>
                   <div>
-                    {messages.map((message) => (
+                    {messages?.data?.map((message) => (
                       <Fragment key={message._id}>
                         <Message message={message} />
                         {message.responseStreamId && (

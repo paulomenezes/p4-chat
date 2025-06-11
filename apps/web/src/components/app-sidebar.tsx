@@ -4,7 +4,7 @@ import * as React from 'react';
 import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useQuery } from 'convex-helpers/react/cache/hooks';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import Image from 'next/image';
@@ -21,11 +21,14 @@ type ThreadsGroup = {
   last30Days?: Doc<'threads'>[];
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isAuthenticated } = useConvexAuth();
+export function AppSidebar({
+  serverUser,
+  serverThreads,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { serverUser: Doc<'users'> | null; serverThreads: Doc<'threads'>[] }) {
   const { signOut } = useAuthActions();
-  const user = useQuery(api.user.currentUser);
-  const threads = useQuery(api.theads.getByUserId);
+  const user = useQuery(api.user.currentUser) ?? serverUser;
+  const threads = useQuery(api.theads.getByUserId) ?? serverThreads;
   const [search, setSearch] = useState('');
 
   const threadsGroups = useMemo(() => {
@@ -172,7 +175,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarContent>
       <SidebarFooter>
-        {isAuthenticated && user ? (
+        {user ? (
           <button
             aria-label="Go to settings"
             role="button"
