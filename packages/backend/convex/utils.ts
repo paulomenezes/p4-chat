@@ -1,6 +1,6 @@
 import { customMutation, customQuery } from 'convex-helpers/server/customFunctions';
-import { mutation, query, QueryCtx } from './_generated/server';
-import { SessionId, SessionIdArg } from 'convex-helpers/server/sessions';
+import { mutation, query, type QueryCtx } from './_generated/server';
+import { type SessionId, SessionIdArg } from 'convex-helpers/server/sessions';
 import { getAuthUserId } from '@convex-dev/auth/server';
 
 async function getUser(ctx: QueryCtx, sessionId: SessionId) {

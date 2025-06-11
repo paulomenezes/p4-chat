@@ -6,7 +6,7 @@ import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { MODELS } from '../models';
-import { SessionId } from 'convex-helpers/server/sessions';
+import { type SessionId } from 'convex-helpers/server/sessions';
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as {
