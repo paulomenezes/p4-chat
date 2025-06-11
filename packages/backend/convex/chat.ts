@@ -1,10 +1,11 @@
 import { httpAction } from './_generated/server';
-import { internal } from './_generated/api';
-import { type StreamId } from '@convex-dev/persistent-text-streaming';
+import { api, internal } from './_generated/api';
 import { streamingComponent } from './streaming';
-import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
+import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { type Id } from './_generated/dataModel';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { MODELS } from '../models';
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as {
@@ -16,16 +17,22 @@ export const streamChat = httpAction(async (ctx, request) => {
   // we immediately return a streaming response to the client
   const response = await streamingComponent.stream(ctx, request, body.streamId as StreamId, async (ctx, request, streamId, append) => {
     // Lets grab the history up to now so that the AI has some context
-    const history = await ctx.runQuery(internal.messages.getHistory, { threadId: (threadId ?? undefined) as Id<'threads'> | undefined });
+    const [history, userConfig] = await Promise.all([
+      ctx.runQuery(internal.messages.getHistory, { threadId: (threadId ?? undefined) as Id<'threads'> | undefined }),
+      ctx.runQuery(api.user.getUserConfig),
+    ]);
+
+    const openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
 
     const { textStream } = streamText({
-      model: google('gemini-1.5-flash'),
+      model: openrouter(userConfig?.currentlySelectedModel ?? MODELS[0].id),
       messages: history.map((message) => ({
         role: message.role,
         content: message.content,
       })),
       onFinish: async (message) => {
-        console.log('message', message.text, streamId);
         await ctx.runMutation(internal.messages.updateMessage, {
           streamId,
           content: message.text,

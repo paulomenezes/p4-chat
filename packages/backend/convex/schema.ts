@@ -5,6 +5,11 @@ import { StreamIdValidator } from '@convex-dev/persistent-text-streaming';
 
 export default defineSchema({
   ...authTables,
+  userConfig: defineTable({
+    userId: v.id('users'),
+    currentlySelectedModel: v.string(),
+    favoriteModels: v.array(v.string()),
+  }).index('by_userId', ['userId']),
   threads: defineTable({
     title: v.string(),
     userId: v.id('users'),

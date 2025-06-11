@@ -6,14 +6,14 @@ import MarkdownIt from 'markdown-it';
 
 const md = MarkdownIt();
 
-md.use(
-  await Shiki({
-    themes: {
-      light: 'vitesse-light',
-      dark: 'vitesse-dark',
-    },
-  }),
-);
+// md.use(
+//   await Shiki({
+//     themes: {
+//       light: 'vitesse-light',
+//       dark: 'vitesse-dark',
+//     },
+//   }),
+// );
 
 export function Message({ message }: { message: Doc<'messages'> }) {
   return (
@@ -46,7 +46,6 @@ function UserMessage({ message }: { message: Doc<'messages'> }) {
           data-action="retry"
           data-state="closed"
           type="button"
-          id="radix-:r13:"
           aria-haspopup="menu"
           aria-expanded="false"
         >
@@ -109,7 +108,6 @@ function AssistantMessage({ message }: { message: Doc<'messages'> }) {
               aria-label="Branch off message"
               data-state="closed"
               type="button"
-              id="radix-:r1c:"
               aria-haspopup="menu"
               aria-expanded="false"
             >
@@ -124,7 +122,6 @@ function AssistantMessage({ message }: { message: Doc<'messages'> }) {
               data-action="retry"
               data-state="closed"
               type="button"
-              id="radix-:r1f:"
               aria-haspopup="menu"
               aria-expanded="false"
             >

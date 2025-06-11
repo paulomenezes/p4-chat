@@ -5,6 +5,7 @@ import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useEffect, useMemo } from 'react';
 import Markdown from 'react-markdown';
+import { useAuthToken } from '@convex-dev/auth/react';
 
 export default function ServerMessage({
   message,
@@ -19,11 +20,16 @@ export default function ServerMessage({
   stopStreaming: () => void;
   scrollToBottom: () => void;
 }) {
+  const token = useAuthToken();
+
   const { text, status } = useStream(
     api.streaming.getStreamBody,
     new URL(`${getConvexSiteUrl()}/chat-stream?threadId=${threadId}`),
     isDriven,
     message.responseStreamId as StreamId,
+    {
+      authToken: token,
+    },
   );
 
   const isCurrentlyStreaming = useMemo(() => {

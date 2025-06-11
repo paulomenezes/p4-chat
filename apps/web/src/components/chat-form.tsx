@@ -1,7 +1,8 @@
 'use client';
 
 import type { ChatRequestOptions } from 'ai';
-import { ArrowUpIcon, ChevronDownIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { ArrowUpIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { ModelSelector } from './model-selector';
 
 export function ChatForm({
   input,
@@ -17,8 +18,6 @@ export function ChatForm({
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
 }) {
-  // const { messages, input, handleInputChange, handleSubmit, setInput } = useChat();
-
   return (
     <div>
       <form
@@ -64,17 +63,7 @@ export function ChatForm({
 
             <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
               <div className="ml-[-7px] flex items-center gap-1">
-                <button
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-8 rounded-md text-xs relative gap-2 px-2 py-1.5 -mb-2 text-muted-foreground"
-                  type="button"
-                  id="radix-:r81:"
-                  aria-haspopup="menu"
-                  aria-expanded="false"
-                  data-state="closed"
-                >
-                  <div className="text-left text-sm font-medium">Gemini 2.5 Flash</div>
-                  <ChevronDownIcon className="right-0 size-4" />
-                </button>
+                <ModelSelector />
                 <button
                   className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 px-3 text-xs -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 py-1.5 pl-2 pr-2.5 text-muted-foreground max-sm:p-2"
                   type="button"
