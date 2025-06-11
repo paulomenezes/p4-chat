@@ -1,38 +1,35 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { internalMutation, internalQuery, mutation, query } from './_generated/server';
+import { internalMutation, internalQuery, query } from './_generated/server';
 import { v } from 'convex/values';
 import { streamingComponent } from './streaming';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { internal } from './_generated/api';
+import { mutationWithSession, queryWithSession } from './utils';
 
-export const listMessages = query({
+export const listMessages = queryWithSession({
   args: {
-    threadId: v.optional(v.id('threads')),
+    threadId: v.id('threads'),
   },
   handler: async (ctx, args) => {
-    if (!args.threadId) {
+    const userId = ctx.userId;
+
+    if (!userId) {
       return [];
     }
 
     return await ctx.db
       .query('messages')
-      .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId!))
+      .withIndex('by_threadId', (q) => q.eq('threadId', args.threadId).eq('userId', userId))
       .collect();
   },
 });
 
-export const sendMessage = mutation({
+export const sendMessage = mutationWithSession({
   args: {
     prompt: v.string(),
     threadId: v.optional(v.id('threads')),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-
-    if (!userId) {
-      throw new Error('Unauthorized');
-    }
-
+    const userId = ctx.userId;
     const responseStreamId = await streamingComponent.createStream(ctx);
 
     let threadId = args.threadId;

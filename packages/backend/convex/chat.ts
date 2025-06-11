@@ -6,12 +6,16 @@ import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { MODELS } from '../models';
+import { SessionId } from 'convex-helpers/server/sessions';
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as {
     streamId: string;
   };
-  const threadId = new URL(request.url).searchParams.get('threadId');
+
+  const searchParams = new URL(request.url).searchParams;
+  const threadId = searchParams.get('threadId');
+  const sessionId = searchParams.get('sessionId') as SessionId | null;
 
   // Start streaming and persisting at the same time while
   // we immediately return a streaming response to the client
@@ -19,7 +23,7 @@ export const streamChat = httpAction(async (ctx, request) => {
     // Lets grab the history up to now so that the AI has some context
     const [history, userConfig] = await Promise.all([
       ctx.runQuery(internal.messages.getHistory, { threadId: (threadId ?? undefined) as Id<'threads'> | undefined }),
-      ctx.runQuery(api.user.getUserConfig),
+      sessionId ? ctx.runQuery(api.user.getUserConfig, { sessionId }) : Promise.resolve(null),
     ]);
 
     const openrouter = createOpenRouter({

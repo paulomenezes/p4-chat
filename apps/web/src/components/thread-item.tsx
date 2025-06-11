@@ -16,9 +16,11 @@ import {
 } from './ui/alert-dialog';
 import { useQueryState } from 'nuqs';
 import { cn } from '@/lib/utils';
+import { useSessionId } from 'convex-helpers/react/sessions';
 
 export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
   const [chatId, setChatId] = useQueryState('chat');
+  const [sessionId] = useSessionId();
 
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [value, setValue] = useState(thread.title);
@@ -61,7 +63,7 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
               className="rounded-md p-1.5 hover:bg-muted/40"
               tabIndex={-1}
               aria-label={thread.pinned ? 'Unpin thread' : 'Pin thread'}
-              onClick={() => togglePin({ id: thread._id })}
+              onClick={() => sessionId && togglePin({ id: thread._id, sessionId })}
             >
               {thread.pinned ? <PinOffIcon className="size-4" /> : <PinIcon className="size-4" />}
             </button>
@@ -91,7 +93,11 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                remove({ id: thread._id });
+                if (!sessionId) {
+                  return;
+                }
+
+                remove({ id: thread._id, sessionId });
                 if (chatId === thread._id) {
                   setChatId(null);
                 }

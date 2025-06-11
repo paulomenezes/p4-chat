@@ -15,6 +15,7 @@ import type * as messages from "../messages.js";
 import type * as streaming from "../streaming.js";
 import type * as theads from "../theads.js";
 import type * as user from "../user.js";
+import type * as utils from "../utils.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   streaming: typeof streaming;
   theads: typeof theads;
   user: typeof user;
+  utils: typeof utils;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

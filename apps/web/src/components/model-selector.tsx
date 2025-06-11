@@ -11,33 +11,42 @@ import {
 import { useMemo, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { MODELS } from '@p4-chat/backend/models';
+import { useSessionId } from 'convex-helpers/react/sessions';
+import { useQueryWithStatus } from '@/hooks/use-query';
 
 export function ModelSelector() {
-  const userConfig = useQuery(api.user.getUserConfig);
+  const [sessionId] = useSessionId();
+  const userConfig = useQueryWithStatus(api.user.getUserConfig, sessionId ? { sessionId } : 'skip');
   const updateCurrentlySelectedModel = useMutation(api.user.updateCurrentlySelectedModel).withOptimisticUpdate((localStore, args) => {
-    const currentValue = localStore.getQuery(api.user.getUserConfig);
-
-    if (currentValue) {
-      localStore.setQuery(
-        api.user.getUserConfig,
-        {},
-        {
-          ...currentValue,
-          currentlySelectedModel: args.currentlySelectedModel,
-        },
-      );
+    if (!sessionId) {
+      return;
     }
+
+    const currentValue = localStore.getQuery(api.user.getUserConfig, { sessionId });
+
+    if (!currentValue) {
+      return;
+    }
+
+    localStore.setQuery(
+      api.user.getUserConfig,
+      { sessionId },
+      {
+        ...currentValue,
+        currentlySelectedModel: args.currentlySelectedModel,
+      },
+    );
   });
 
   const [open, setOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   const selectedModel = useMemo(() => {
-    return MODELS.find((model) => model.id === (userConfig?.currentlySelectedModel ?? MODELS[0].id));
-  }, [userConfig?.currentlySelectedModel]);
+    return MODELS.find((model) => model.id === (userConfig?.data?.currentlySelectedModel ?? MODELS[0].id));
+  }, [userConfig?.data?.currentlySelectedModel]);
 
   const filteredModels = useMemo(() => {
     if (selectedFeatures.length === 0) {
@@ -88,14 +97,20 @@ export function ModelSelector() {
                   key={model.id}
                   value={model.id}
                   onSelect={(currentValue) => {
+                    if (!sessionId) {
+                      return;
+                    }
+
                     if (userConfig) {
                       updateCurrentlySelectedModel({
-                        id: userConfig?._id,
+                        id: userConfig?.data?._id,
                         currentlySelectedModel: currentValue,
+                        sessionId,
                       });
                     } else {
                       updateCurrentlySelectedModel({
                         currentlySelectedModel: currentValue,
+                        sessionId,
                       });
                     }
 

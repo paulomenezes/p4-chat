@@ -6,6 +6,7 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useEffect, useMemo } from 'react';
 import Markdown from 'react-markdown';
 import { useAuthToken } from '@convex-dev/auth/react';
+import { useSessionId } from 'convex-helpers/react/sessions';
 
 export default function ServerMessage({
   message,
@@ -21,10 +22,11 @@ export default function ServerMessage({
   scrollToBottom: () => void;
 }) {
   const token = useAuthToken();
+  const [sessionId] = useSessionId();
 
   const { text, status } = useStream(
     api.streaming.getStreamBody,
-    new URL(`${getConvexSiteUrl()}/chat-stream?threadId=${threadId}`),
+    new URL(`${getConvexSiteUrl()}/chat-stream?threadId=${threadId}&sessionId=${sessionId}`),
     isDriven,
     message.responseStreamId as StreamId,
     {

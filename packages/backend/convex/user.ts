@@ -1,11 +1,13 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { mutation, query } from './_generated/server';
+import { query } from './_generated/server';
 import { v } from 'convex/values';
+import { mutationWithSession, queryWithSession } from './utils';
 
 export const currentUser = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
+
     if (userId === null) {
       return null;
     }
@@ -14,12 +16,12 @@ export const currentUser = query({
   },
 });
 
-export const getUserConfig = query({
+export const getUserConfig = queryWithSession({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = ctx.userId;
 
-    if (userId === null) {
+    if (!userId) {
       return null;
     }
 
@@ -30,15 +32,15 @@ export const getUserConfig = query({
   },
 });
 
-export const updateCurrentlySelectedModel = mutation({
+export const updateCurrentlySelectedModel = mutationWithSession({
   args: {
     id: v.optional(v.id('userConfig')),
     currentlySelectedModel: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = ctx.userId;
 
-    if (userId === null) {
+    if (!userId) {
       return null;
     }
 

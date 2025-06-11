@@ -4,6 +4,23 @@ import { v } from 'convex/values';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { internal } from './_generated/api';
+import { mutationWithSession, queryWithSession } from './utils';
+
+export const getByUserIdOrSessionId = queryWithSession({
+  args: {},
+  handler: async (ctx) => {
+    const userId = ctx.userId;
+
+    if (!userId) {
+      return [];
+    }
+
+    return await ctx.db
+      .query('threads')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
+  },
+});
 
 export const getByUserId = query({
   args: {},
@@ -67,12 +84,12 @@ export const generateThreadTitle = internalAction({
   },
 });
 
-export const togglePin = mutation({
+export const togglePin = mutationWithSession({
   args: {
     id: v.id('threads'),
   },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = ctx.userId;
 
     if (!userId) {
       throw new Error('Unauthorized');
@@ -92,12 +109,12 @@ export const togglePin = mutation({
   },
 });
 
-export const remove = mutation({
+export const remove = mutationWithSession({
   args: {
     id: v.id('threads'),
   },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = ctx.userId;
 
     if (!userId) {
       throw new Error('Unauthorized');

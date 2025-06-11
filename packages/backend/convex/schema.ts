@@ -5,6 +5,19 @@ import { StreamIdValidator } from '@convex-dev/persistent-text-streaming';
 
 export default defineSchema({
   ...authTables,
+  users: defineTable({
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.float64()),
+    image: v.optional(v.string()),
+    isAnonymous: v.optional(v.boolean()),
+    name: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.float64()),
+    sessionId: v.optional(v.string()),
+  })
+    .index('email', ['email'])
+    .index('phone', ['phone'])
+    .index('by_sessionId', ['sessionId']),
   userConfig: defineTable({
     userId: v.id('users'),
     currentlySelectedModel: v.string(),
@@ -22,7 +35,7 @@ export default defineSchema({
     userId: v.id('users'),
     responseStreamId: v.optional(StreamIdValidator),
   })
-    .index('by_threadId', ['threadId'])
+    .index('by_threadId', ['threadId', 'userId'])
     .index('by_userId', ['userId'])
     .index('by_streamId', ['responseStreamId']),
 });

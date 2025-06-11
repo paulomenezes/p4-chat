@@ -12,6 +12,8 @@ import { useMemo, useState } from 'react';
 import { startOfDay, subDays, isAfter, isSameDay } from 'date-fns';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { ThreadItem } from './thread-item';
+import { useSessionId } from 'convex-helpers/react/sessions';
+import { useQueryWithStatus } from '@/hooks/use-query';
 
 type ThreadsGroup = {
   pinned?: Doc<'threads'>[];
@@ -27,8 +29,9 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { serverUser: Doc<'users'> | null; serverThreads: Doc<'threads'>[] }) {
   const { signOut } = useAuthActions();
+  const [sessionId] = useSessionId();
   const user = useQuery(api.user.currentUser) ?? serverUser;
-  const threads = useQuery(api.theads.getByUserId) ?? serverThreads;
+  const threads = useQueryWithStatus(api.theads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
 
   const threadsGroups = useMemo(() => {

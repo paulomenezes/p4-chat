@@ -12,15 +12,25 @@ import dynamic from 'next/dynamic';
 import { NewChatMessages } from './new-chat-messages';
 import { MoonIcon, Settings2Icon } from 'lucide-react';
 import { useQueryWithStatus } from '@/hooks/use-query';
+import { useSessionId } from 'convex-helpers/react/sessions';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
 export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
   const [chatId, setChatId] = useQueryState('chat');
+  const [sessionId] = useSessionId();
 
   const [drivenIds, setDrivenIds] = useState<Set<string>>(new Set());
   const [isStreaming, setIsStreaming] = useState(false);
-  const messages = useQueryWithStatus(api.messages.listMessages, { threadId: (chatId ?? undefined) as Id<'threads'> | undefined });
+  const messages = useQueryWithStatus(
+    api.messages.listMessages,
+    sessionId && chatId
+      ? {
+          sessionId,
+          threadId: chatId as Id<'threads'>,
+        }
+      : 'skip',
+  );
   const sendMessage = useMutation(api.messages.sendMessage);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -115,13 +125,16 @@ export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
                     handleSubmit={async (e) => {
                       e?.preventDefault?.();
 
-                      if (!inputValue.trim()) return;
+                      if (!inputValue.trim() || !sessionId) {
+                        return;
+                      }
 
                       setInputValue('');
 
                       const { threadId, messageId } = await sendMessage({
                         prompt: inputValue,
                         threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
+                        sessionId,
                       });
 
                       setChatId(threadId);
