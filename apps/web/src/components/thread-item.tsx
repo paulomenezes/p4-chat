@@ -1,4 +1,4 @@
-import { PinIcon, PinOffIcon, XIcon } from 'lucide-react';
+import { PinIcon, PinOffIcon, SplitIcon, XIcon } from 'lucide-react';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -24,8 +24,8 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
 
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [value, setValue] = useState(thread.title);
-  const togglePin = useMutation(api.theads.togglePin);
-  const remove = useMutation(api.theads.remove);
+  const togglePin = useMutation(api.threads.togglePin);
+  const remove = useMutation(api.threads.remove);
 
   useEffect(() => {
     setValue(thread.title);
@@ -39,10 +39,11 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
           chatId === thread._id && 'bg-sidebar-accent text-sidebar-accent-foreground',
         )}
         href={`/?chat=${thread._id}`}
-        data-discover="true"
+        prefetch={true}
       >
         <div className="relative flex w-full items-center">
-          <button data-state="closed" className="w-full">
+          {thread.parentThreadId && <SplitIcon className="mr-1 size-4 text-muted-foreground/50 hover:text-muted-foreground" />}
+          <button className="w-full">
             <div className="relative w-full">
               <input
                 aria-label="Thread title"

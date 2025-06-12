@@ -30,7 +30,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ConvexAuthNextjsProvider client={convex}>
       <QueryClientProvider client={queryClient}>
         <ConvexQueryCacheProvider>
-          <SessionProvider>
+          <SessionProvider ssrFriendly>
             <TooltipProvider>
               <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
                 <NuqsAdapter>{children}</NuqsAdapter>

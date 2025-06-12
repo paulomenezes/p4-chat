@@ -31,7 +31,7 @@ export function AppSidebar({
   const { signOut } = useAuthActions();
   const [sessionId] = useSessionId();
   const user = useQuery(api.user.currentUser) ?? serverUser;
-  const threads = useQueryWithStatus(api.theads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
+  const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
 
   const threadsGroups = useMemo(() => {
@@ -112,7 +112,7 @@ export function AppSidebar({
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <PinIcon className="-ml-0.5 mr-1 mt-px !size-3" />
                   Pinned
@@ -126,7 +126,7 @@ export function AppSidebar({
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Today</span>
                 </div>
@@ -139,7 +139,7 @@ export function AppSidebar({
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Yesterday</span>
                 </div>
@@ -152,7 +152,7 @@ export function AppSidebar({
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Last 7 Days</span>
                 </div>
@@ -165,7 +165,7 @@ export function AppSidebar({
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Last 30 Days</span>
                 </div>

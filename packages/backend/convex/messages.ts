@@ -39,7 +39,7 @@ export const sendMessage = mutationWithSession({
         userId,
       });
 
-      await ctx.scheduler.runAfter(0, internal.theads.generateThreadTitle, {
+      await ctx.scheduler.runAfter(0, internal.threads.generateThreadTitle, {
         threadId: thread,
         firstMessage: args.prompt,
       });

@@ -18,6 +18,7 @@ export const getByUserIdOrSessionId = queryWithSession({
     return await ctx.db
       .query('threads')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .order('desc')
       .collect();
   },
 });
@@ -34,6 +35,7 @@ export const getByUserId = query({
     return await ctx.db
       .query('threads')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .order('desc')
       .collect();
   },
 });
@@ -77,7 +79,7 @@ export const generateThreadTitle = internalAction({
       `,
     });
 
-    await ctx.runMutation(internal.theads.update, {
+    await ctx.runMutation(internal.threads.update, {
       id: args.threadId,
       title: result.text,
     });
@@ -136,5 +138,66 @@ export const remove = mutationWithSession({
       .collect();
 
     await Promise.all([ctx.db.delete(id), ...messages.map((m) => ctx.db.delete(m._id))]);
+  },
+});
+
+export const branchOff = mutationWithSession({
+  args: {
+    id: v.id('threads'),
+    messageId: v.id('messages'),
+  },
+  handler: async (ctx, { id, messageId }) => {
+    const userId = ctx.userId;
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const sourceThread = await ctx.db.get(id);
+
+    if (!sourceThread) {
+      throw new Error('Thread not found');
+    }
+
+    if (sourceThread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Get all messages up to and including the specified message
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_threadId', (q) => q.eq('threadId', id))
+      .collect();
+
+    const messagesUntilId = [];
+    for (const message of messages) {
+      messagesUntilId.push(message);
+      if (message._id === messageId) {
+        break;
+      }
+    }
+
+    // Create new thread
+    const newThreadId = await ctx.db.insert('threads', {
+      title: sourceThread.title,
+      userId,
+      pinned: false, // New branch starts unpinned
+      parentThreadId: id,
+    });
+
+    // Copy messages to new thread
+    await Promise.all(
+      messagesUntilId.map((message) =>
+        ctx.db.insert('messages', {
+          content: message.content,
+          threadId: newThreadId,
+          role: message.role,
+          userId: message.userId,
+          responseStreamId: message.responseStreamId,
+        }),
+      ),
+    );
+
+    return newThreadId;
   },
 });

@@ -13,12 +13,14 @@ import { NewChatMessages } from './new-chat-messages';
 import { MoonIcon, Settings2Icon } from 'lucide-react';
 import { useQueryWithStatus } from '@/hooks/use-query';
 import { useSessionId } from 'convex-helpers/react/sessions';
+import { setSessionIdCookie } from '@/actions/set-cookies';
+import type { SessionId } from 'convex-helpers/server/sessions';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
-export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
+export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'> | null; serverSessionId: SessionId | null }) {
   const [chatId, setChatId] = useQueryState('chat');
-  const [sessionId] = useSessionId();
+  const [sessionId] = useSessionId() ?? [serverSessionId];
 
   const [drivenIds, setDrivenIds] = useState<Set<string>>(new Set());
   const [isStreaming, setIsStreaming] = useState(false);
@@ -130,6 +132,7 @@ export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
                       }
 
                       setInputValue('');
+                      setSessionIdCookie(sessionId);
 
                       const { threadId, messageId } = await sendMessage({
                         prompt: inputValue,
@@ -226,28 +229,23 @@ export function Chat({ serverUser }: { serverUser: Doc<'users'> | null }) {
               <NewChatMessages serverUser={serverUser} onSelectMessage={(message) => setInputValue(message)} />
             ) : (
               <>
-                <div ref={messageContainerRef}>
-                  <div>
-                    {messages?.data?.map((message) => (
-                      <Fragment key={message._id}>
-                        <Message message={message} />
-                        {message.responseStreamId && (
-                          <ServerMessage
-                            message={message}
-                            isDriven={drivenIds.has(message._id)}
-                            stopStreaming={() => {
-                              setIsStreaming(false);
-                              focusInput();
-                            }}
-                            scrollToBottom={scrollToBottom}
-                            threadId={chatId as Id<'threads'>}
-                          />
-                        )}
-                      </Fragment>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
+                {messages?.data?.map((message) => (
+                  <Fragment key={message._id}>
+                    <Message message={message} sessionId={sessionId} />
+                    {message.responseStreamId && (
+                      <ServerMessage
+                        message={message}
+                        isDriven={drivenIds.has(message._id)}
+                        stopStreaming={() => {
+                          setIsStreaming(false);
+                          focusInput();
+                        }}
+                        scrollToBottom={scrollToBottom}
+                        threadId={chatId as Id<'threads'>}
+                      />
+                    )}
+                  </Fragment>
+                ))}
               </>
             )}
           </div>
