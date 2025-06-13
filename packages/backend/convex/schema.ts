@@ -28,6 +28,7 @@ export default defineSchema({
     userId: v.id('users'),
     pinned: v.optional(v.boolean()),
     parentThreadId: v.optional(v.id('threads')),
+    model: v.optional(v.string()),
   }).index('by_userId', ['userId']),
   messages: defineTable({
     threadId: v.id('threads'),
@@ -35,6 +36,13 @@ export default defineSchema({
     content: v.string(),
     userId: v.id('users'),
     responseStreamId: v.optional(StreamIdValidator),
+    model: v.optional(v.string()),
+    promptTokens: v.optional(v.number()),
+    completionTokens: v.optional(v.number()),
+    totalTokens: v.optional(v.number()),
+    durationSeconds: v.optional(v.number()),
+    tokensPerSecond: v.optional(v.number()),
+    reasoning: v.optional(v.string()),
   })
     .index('by_threadId', ['threadId', 'userId'])
     .index('by_userId', ['userId'])

@@ -4,9 +4,10 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './code-block';
 
-const components: Partial<Components> = {
+// @ts-ignore
+const components: (disableHighlight: boolean) => Partial<Components> = (disableHighlight: boolean) => ({
   // @ts-ignore
-  code: CodeBlock,
+  code: (props) => <CodeBlock {...props} disableHighlight={disableHighlight} />,
   pre: ({ children }) => <>{children}</>,
   ol: ({ node, children, ...props }) => {
     return (
@@ -86,16 +87,19 @@ const components: Partial<Components> = {
       </h6>
     );
   },
-};
+});
 
 const remarkPlugins = [remarkGfm];
 
-function NonMemoizedMarkdown({ children }: { children: string }) {
+function NonMemoizedMarkdown({ children, disableHighlight }: { children: string; disableHighlight?: boolean }) {
   return (
-    <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+    <ReactMarkdown remarkPlugins={remarkPlugins} components={components(disableHighlight ?? false)}>
       {children}
     </ReactMarkdown>
   );
 }
 
-export const Markdown = memo(NonMemoizedMarkdown, (prevProps, nextProps) => prevProps.children === nextProps.children);
+export const Markdown = memo(
+  NonMemoizedMarkdown,
+  (prevProps, nextProps) => prevProps.children === nextProps.children && prevProps.disableHighlight === nextProps.disableHighlight,
+);

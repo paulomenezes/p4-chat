@@ -116,6 +116,13 @@ export const updateMessage = internalMutation({
   args: {
     streamId: v.string(),
     content: v.string(),
+    model: v.string(),
+    promptTokens: v.number(),
+    completionTokens: v.number(),
+    totalTokens: v.number(),
+    durationSeconds: v.number(),
+    tokensPerSecond: v.number(),
+    reasoning: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const message = await ctx.db
@@ -134,6 +141,13 @@ export const updateMessage = internalMutation({
         threadId: message.threadId,
         role: 'assistant',
         userId: message.userId,
+        model: args.model,
+        promptTokens: args.promptTokens,
+        completionTokens: args.completionTokens,
+        totalTokens: args.totalTokens,
+        durationSeconds: args.durationSeconds,
+        tokensPerSecond: args.tokensPerSecond,
+        reasoning: args.reasoning,
       }),
     ]);
   },

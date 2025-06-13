@@ -13,6 +13,7 @@ interface CodeBlockProps {
   inline: boolean;
   className: string;
   children: any;
+  disableHighlight?: boolean;
 }
 
 const extensionMap: Record<string, string> = {
@@ -39,16 +40,16 @@ const extensionMap: Record<string, string> = {
   xml: 'xml',
 };
 
-export function CodeBlock({ node, className, children, ...props }: CodeBlockProps) {
-  const inline = !children.includes('\n');
+export function CodeBlock({ node, className, children, disableHighlight, ...props }: CodeBlockProps) {
+  const inline = !(children ?? '').includes('\n');
   const [html, setHtml] = useState<string | null>(null);
   const [wrap, setWrap] = useState(false);
 
-  const getFileExtension = useCallback(() => {
-    const language = className.startsWith('language-') ? className.slice(9) : '';
+  const language = className?.startsWith('language-') ? className.slice(9) : '';
 
+  const getFileExtension = useCallback(() => {
     return extensionMap[language] || 'txt';
-  }, [className]);
+  }, [language]);
 
   const downloadCode = useCallback(() => {
     try {
@@ -69,19 +70,27 @@ export function CodeBlock({ node, className, children, ...props }: CodeBlockProp
   }, [children, getFileExtension]);
 
   useEffect(() => {
+    if (disableHighlight) {
+      return;
+    }
+
     codeToHtml(children, {
-      lang: 'typescript',
+      lang: language,
       theme: 'github-light',
-    }).then((html) => {
-      setHtml(html);
-    });
-  }, []);
+    })
+      .then((html) => {
+        setHtml(html);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [disableHighlight, children, language]);
 
   if (!inline) {
     return (
       <div className="not-prose relative mt-2 flex w-full flex-col pt-9">
         <div className="absolute inset-x-0 top-0 flex h-9 items-center justify-between rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
-          <span className="font-mono">{className.startsWith('language-') ? className.slice(9) : ''}</span>
+          <span className="font-mono">{language}</span>
           <div>
             <Button variant="secondary" size="icon" onClick={downloadCode} aria-label="Download code">
               <DownloadIcon className="size-4" />

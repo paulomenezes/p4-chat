@@ -30,23 +30,59 @@ export const streamChat = httpAction(async (ctx, request) => {
       apiKey: process.env.OPENROUTER_API_KEY,
     });
 
-    const { textStream } = streamText({
-      model: openrouter(userConfig?.currentlySelectedModel ?? MODELS[0].id),
+    const startTime = Date.now();
+    const model = userConfig?.currentlySelectedModel ?? MODELS[0].id;
+
+    const { fullStream, reasoning } = streamText({
+      model: openrouter(model),
       messages: history.map((message) => ({
         role: message.role,
         content: message.content,
       })),
       onFinish: async (message) => {
+        const endTime = Date.now();
+        const durationSeconds = (endTime - startTime) / 1000;
+
         await ctx.runMutation(internal.messages.updateMessage, {
           streamId,
           content: message.text,
+          model,
+          promptTokens: message.usage.promptTokens,
+          completionTokens: message.usage.completionTokens,
+          totalTokens: message.usage.totalTokens,
+          durationSeconds,
+          tokensPerSecond: durationSeconds > 0 ? message.usage.totalTokens / durationSeconds : 0,
+          reasoning: message.reasoning,
         });
       },
     });
 
+    let startedReasoning = false;
+    let endReasoning = false;
+
     // Append each chunk to the persistent stream as they come in from openai
-    for await (const part of textStream) {
-      await append(part);
+    for await (const part of fullStream) {
+      switch (part.type) {
+        case 'text-delta': {
+          if (startedReasoning && !endReasoning) {
+            endReasoning = true;
+            await append('</reasoning>');
+          }
+
+          await append(part.textDelta);
+          break;
+        }
+        case 'reasoning': {
+          if (!startedReasoning) {
+            startedReasoning = true;
+            await append('<reasoning>');
+          }
+
+          await append(part.textDelta);
+
+          break;
+        }
+      }
     }
   });
 
