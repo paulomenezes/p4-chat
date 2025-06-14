@@ -43,6 +43,7 @@ export default defineSchema({
     durationSeconds: v.optional(v.number()),
     tokensPerSecond: v.optional(v.number()),
     reasoning: v.optional(v.string()),
+    stopped: v.optional(v.boolean()),
   })
     .index('by_threadId', ['threadId', 'userId'])
     .index('by_userId', ['userId'])

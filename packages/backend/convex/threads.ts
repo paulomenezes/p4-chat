@@ -145,8 +145,9 @@ export const branchOff = mutationWithSession({
   args: {
     id: v.id('threads'),
     messageId: v.id('messages'),
+    modelId: v.optional(v.string()),
   },
-  handler: async (ctx, { id, messageId }) => {
+  handler: async (ctx, { id, messageId, modelId }) => {
     const userId = ctx.userId;
 
     if (!userId) {
@@ -183,6 +184,7 @@ export const branchOff = mutationWithSession({
       userId,
       pinned: false, // New branch starts unpinned
       parentThreadId: id,
+      model: modelId,
     });
 
     // Copy messages to new thread
@@ -194,6 +196,13 @@ export const branchOff = mutationWithSession({
           role: message.role,
           userId: message.userId,
           responseStreamId: message.responseStreamId,
+          model: message.model,
+          completionTokens: message.completionTokens,
+          promptTokens: message.promptTokens,
+          totalTokens: message.totalTokens,
+          durationSeconds: message.durationSeconds,
+          tokensPerSecond: message.tokensPerSecond,
+          reasoning: message.reasoning,
         }),
       ),
     );

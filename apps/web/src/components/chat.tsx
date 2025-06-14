@@ -1,16 +1,15 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChatForm } from '@/components/chat-form';
 import { Message } from '@/components/message';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
-import { useWindowSize } from '@/hooks/use-window-size';
 import { useQueryState } from 'nuqs';
 import dynamic from 'next/dynamic';
 import { NewChatMessages } from './new-chat-messages';
-import { MoonIcon, Settings2Icon } from 'lucide-react';
+import { ChevronDownIcon, MoonIcon, Settings2Icon } from 'lucide-react';
 import { useQueryWithStatus } from '@/hooks/use-query';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { setSessionIdCookie } from '@/actions/set-cookies';
@@ -22,8 +21,8 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   const [chatId, setChatId] = useQueryState('chat');
   const [sessionId] = useSessionId() ?? [serverSessionId];
 
+  const [showNewChatMessages, setShowNewChatMessages] = useState(!chatId);
   const [drivenIds, setDrivenIds] = useState<Set<string>>(new Set());
-  const [isStreaming, setIsStreaming] = useState(false);
   const messages = useQueryWithStatus(
     api.messages.listMessages,
     sessionId && chatId
@@ -34,29 +33,45 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
       : 'skip',
   );
   const sendMessage = useMutation(api.messages.sendMessage);
+  const retryMessage = useMutation(api.messages.retryMessage);
   const [inputValue, setInputValue] = useState('');
+  const [isIntersecting, setIntersecting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const focusInput = useCallback(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = 'smooth') => {
-      // if (messagesEndRef.current) {
-      //   messagesEndRef.current.scrollIntoView({ behavior });
-      // }
-    },
-    [messagesEndRef],
-  );
-
-  const windowSize = useWindowSize();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [windowSize, scrollToBottom]);
+    if (!messagesEndRef.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        setIntersecting(entry.isIntersecting);
+      });
+    });
+
+    observer.observe(messagesEndRef.current);
+
+    return () => observer.disconnect();
+  }, [messagesEndRef, chatId]);
+
+  const scrollToBottom = useCallback(() => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTo({
+        top: messageContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, []);
+
+  const currentStreamId = useMemo(() => {
+    return messages?.data?.find((message) => message.responseStreamId)?.responseStreamId;
+  }, [messages]);
+
+  useEffect(() => {
+    setShowNewChatMessages(!chatId);
+  }, [chatId]);
 
   return (
     <div className="firefox-scrollbar-margin-fix min-h-pwa relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
@@ -107,6 +122,17 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
         </div>
         <div className="pointer-events-none absolute bottom-0 z-10 w-full px-2">
           <div className="relative mx-auto flex w-full max-w-3xl flex-col text-center">
+            <div className="flex justify-center pb-4">
+              {!isIntersecting && !!messages?.data?.length && (
+                <button
+                  className="justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:hover:bg-secondary/50 h-8 px-3 text-xs pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-(--chat-overlay) text-secondary-foreground/70 backdrop-blur-xl hover:bg-secondary"
+                  onClick={scrollToBottom}
+                >
+                  <span className="pb-0.5">Scroll to bottom</span>
+                  <ChevronDownIcon className="size-4 -mr-1" />
+                </button>
+              )}
+            </div>
             <div className="pointer-events-none">
               <div className="pointer-events-auto mx-auto w-fit"></div>
               <div className="pointer-events-auto">
@@ -124,8 +150,11 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                   <ChatForm
                     input={inputValue}
                     handleInputChange={(event) => setInputValue(event.target.value)}
+                    currentStreamId={currentStreamId}
+                    inputRef={inputRef}
                     handleSubmit={async (e) => {
                       e?.preventDefault?.();
+                      setShowNewChatMessages(false);
 
                       if (!inputValue.trim() || !sessionId) {
                         return;
@@ -147,7 +176,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                         return prev;
                       });
 
-                      setIsStreaming(true);
+                      inputRef.current?.focus();
                     }}
                   />
                 </div>
@@ -161,6 +190,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
             paddingBottom: '144px',
             scrollbarGutter: 'stable both-edges',
           }}
+          ref={messageContainerRef}
         >
           <div className="fixed right-0 top-0 z-20 h-16 w-28 max-sm:hidden">
             <div
@@ -225,27 +255,49 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
             aria-live="polite"
             className="mx-auto flex w-full max-w-3xl flex-col space-y-12 px-4 pb-10 pt-safe-offset-10"
           >
-            {inputValue.length === 0 && (messages?.data?.length ?? 0) === 0 && (!chatId || messages.isPending === false) ? (
-              <NewChatMessages serverUser={serverUser} onSelectMessage={(message) => setInputValue(message)} />
+            {showNewChatMessages && inputValue.length === 0 ? (
+              <NewChatMessages
+                serverUser={serverUser}
+                onSelectMessage={(message) => {
+                  setInputValue(message);
+                  inputRef.current?.focus();
+                }}
+              />
             ) : (
               <>
                 {messages?.data?.map((message) => (
                   <Fragment key={message._id}>
-                    <Message message={message} sessionId={sessionId} />
+                    <Message
+                      message={message}
+                      sessionId={sessionId}
+                      onRetry={async (modelId: string | undefined) => {
+                        if (!sessionId) {
+                          return;
+                        }
+
+                        setSessionIdCookie(sessionId);
+
+                        const { threadId, messageId } = await retryMessage({
+                          messageId: message._id,
+                          sessionId,
+                          modelId,
+                        });
+
+                        setChatId(threadId);
+
+                        setDrivenIds((prev) => {
+                          prev.add(messageId);
+                          return prev;
+                        });
+                      }}
+                    />
+
                     {message.responseStreamId && (
-                      <ServerMessage
-                        message={message}
-                        isDriven={drivenIds.has(message._id)}
-                        stopStreaming={() => {
-                          setIsStreaming(false);
-                          focusInput();
-                        }}
-                        scrollToBottom={scrollToBottom}
-                        threadId={chatId as Id<'threads'>}
-                      />
+                      <ServerMessage message={message} isDriven={drivenIds.has(message._id)} threadId={chatId as Id<'threads'>} />
                     )}
                   </Fragment>
                 ))}
+                <div ref={messagesEndRef} className="size-2" />
               </>
             )}
           </div>

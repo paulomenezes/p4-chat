@@ -1,15 +1,21 @@
 'use client';
 
 import type { ChatRequestOptions } from 'ai';
-import { ArrowUpIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { ArrowUpIcon, GlobeIcon, PaperclipIcon, SquareIcon } from 'lucide-react';
 import { ModelSelector } from './model-selector';
+import { useMutation } from 'convex/react';
+import { api } from '@p4-chat/backend/convex/_generated/api';
 
 export function ChatForm({
   input,
+  currentStreamId,
+  inputRef,
   handleInputChange,
   handleSubmit,
 }: {
   input: string;
+  currentStreamId: string | undefined;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (
     event?: {
@@ -18,10 +24,11 @@ export function ChatForm({
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
 }) {
+  const stopStreaming = useMutation(api.messages.stopStreaming);
+
   return (
     <div>
       <form
-        action="javascript:throw new Error('A React form was unexpectedly submitted. If you called form.submit() manually, consider using form.requestSubmit() instead. If you\'re trying to use event.stopPropagation() in a submit event handler, consider also calling event.preventDefault().')"
         className="relative flex w-full flex-col items-stretch gap-2 rounded-t-xl border border-b-0 border-white/70 bg-chat-input-background px-3 pt-3 text-secondary-foreground outline-8 outline-chat-input-gradient/50 pb-safe-offset-3 max-sm:pb-6 sm:max-w-3xl dark:border-[hsl(0,0%,83%)]/[0.04] dark:bg-secondary/[0.045] dark:outline-chat-background/40"
         style={{
           boxShadow:
@@ -41,8 +48,15 @@ export function ChatForm({
               id="message"
               name="message"
               value={input}
+              ref={inputRef}
               onBlur={handleInputChange}
               onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
             ></textarea>
             <div id="chat-input-description" className="sr-only">
               Press Enter to send, Shift + Enter for new line
@@ -53,11 +67,16 @@ export function ChatForm({
               <button
                 className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border-reflect button-reflect bg-[rgb(162,59,103)] font-semibold shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 w-9 relative rounded-lg p-2 text-pink-50"
                 type="submit"
-                disabled={input.length === 0}
+                disabled={input.length === 0 && !currentStreamId}
                 aria-label="Message requires text"
                 data-state="closed"
+                onClick={() => {
+                  if (currentStreamId) {
+                    stopStreaming({ streamId: currentStreamId });
+                  }
+                }}
               >
-                <ArrowUpIcon className="!size-5" />
+                {currentStreamId ? <SquareIcon className="!size-5 fill-current" /> : <ArrowUpIcon className="!size-5" />}
               </button>
             </div>
 

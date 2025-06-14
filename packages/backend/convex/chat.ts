@@ -31,9 +31,9 @@ export const streamChat = httpAction(async (ctx, request) => {
     });
 
     const startTime = Date.now();
-    const model = userConfig?.currentlySelectedModel ?? MODELS[0].id;
+    const model = history?.[history.length - 1]?.model ?? userConfig?.currentlySelectedModel ?? MODELS[0].id;
 
-    const { fullStream, reasoning } = streamText({
+    const { fullStream } = streamText({
       model: openrouter(model),
       messages: history.map((message) => ({
         role: message.role,

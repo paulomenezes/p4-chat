@@ -3,25 +3,22 @@ import { getConvexSiteUrl } from '@/lib/get-convex-site-url';
 import type { StreamId } from '@convex-dev/persistent-text-streaming';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
 import { api } from '@p4-chat/backend/convex/_generated/api';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuthToken } from '@convex-dev/auth/react';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { sanitizeText } from '@/lib/utils';
 import { Markdown } from './markdown';
-import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronRightIcon, Loader2Icon } from 'lucide-react';
+import { Loading } from './loading';
 
 export default function ServerMessage({
   message,
   isDriven,
   threadId,
-  stopStreaming,
-  scrollToBottom,
 }: {
   message: Doc<'messages'>;
   isDriven: boolean;
   threadId: Id<'threads'>;
-  stopStreaming: () => void;
-  scrollToBottom: () => void;
 }) {
   const token = useAuthToken();
   const [sessionId] = useSessionId();
@@ -37,12 +34,13 @@ export default function ServerMessage({
     },
   );
 
-  const [textContent, reasoningContent] = useMemo(() => {
+  const [textContent, reasoningContent, hasEnded] = useMemo(() => {
     const hasReasoningStart = text?.includes('<reasoning>');
     const hasReasoningEnd = text?.includes('</reasoning>');
 
     let reasoningContent = '';
     let textContent = '';
+    let hasEnded = false;
 
     if (hasReasoningStart) {
       if (hasReasoningEnd) {
@@ -51,6 +49,7 @@ export default function ServerMessage({
         const reasoningMatch = text?.match(reasoningRegex);
         reasoningContent = reasoningMatch ? reasoningMatch[1] : '';
         textContent = text?.replace(reasoningRegex, '');
+        hasEnded = true;
       } else {
         // If only start tag, everything after is reasoning
         const parts = text?.split('<reasoning>');
@@ -60,7 +59,7 @@ export default function ServerMessage({
       textContent = text || '';
     }
 
-    return [textContent, reasoningContent];
+    return [textContent, reasoningContent, hasEnded];
   }, [text]);
 
   const isCurrentlyStreaming = useMemo(() => {
@@ -70,26 +69,6 @@ export default function ServerMessage({
 
     return status === 'pending' || status === 'streaming';
   }, [isDriven, status]);
-
-  useEffect(() => {
-    if (!isDriven) {
-      return;
-    }
-
-    if (isCurrentlyStreaming) {
-      return;
-    }
-
-    stopStreaming();
-  }, [isDriven, isCurrentlyStreaming, stopStreaming]);
-
-  useEffect(() => {
-    if (!text) {
-      return;
-    }
-
-    scrollToBottom();
-  }, [text, scrollToBottom]);
 
   return (
     <div className="md-answer">
@@ -104,6 +83,7 @@ export default function ServerMessage({
               >
                 {isReasoningOpen ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
                 Reasoning
+                {!hasEnded && <Loader2Icon className="size-4 animate-spin" />}
               </button>
               {isReasoningOpen && (
                 <div className="prose prose-pink max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
@@ -119,6 +99,8 @@ export default function ServerMessage({
           aria-label="Assistant message"
           className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
         >
+          {text.length === 0 && <Loading />}
+
           <span className="sr-only">Assistant Reply: </span>
           <Markdown disableHighlight>{sanitizeText(textContent)}</Markdown>
         </div>

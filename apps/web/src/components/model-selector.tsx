@@ -16,6 +16,9 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { MODELS } from '@p4-chat/backend/models';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { useQueryWithStatus } from '@/hooks/use-query';
+import { getModelFromId, getModelName } from '@/lib/utils';
+import { ModelFeatures } from './model-features';
+import { ModelIcon } from './model-icon';
 
 export function ModelSelector() {
   const [sessionId] = useSessionId();
@@ -45,7 +48,7 @@ export function ModelSelector() {
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   const selectedModel = useMemo(() => {
-    return MODELS.find((model) => model.id === (userConfig?.data?.currentlySelectedModel ?? MODELS[0].id));
+    return getModelFromId(userConfig?.data?.currentlySelectedModel);
   }, [userConfig?.data?.currentlySelectedModel]);
 
   const filteredModels = useMemo(() => {
@@ -82,7 +85,7 @@ export function ModelSelector() {
           className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-8 rounded-md text-xs relative gap-2 px-2 py-1.5 -mb-2 text-muted-foreground"
           type="button"
         >
-          <div className="text-left text-sm font-medium">{selectedModel?.name}</div>
+          <div className="text-left text-sm font-medium">{getModelName(selectedModel?.name)}</div>
           <ChevronDownIcon className="right-0 size-4" />
         </button>
       </PopoverTrigger>
@@ -119,23 +122,13 @@ export function ModelSelector() {
                 >
                   <div className="flex w-full items-center justify-between" tabIndex={-1}>
                     <div className="flex items-center gap-2 pr-2 font-medium text-muted-foreground transition-colors">
-                      <svg className="size-4 text-color-heading" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                        <title>{model.architecture.tokenizer}</title>
-                        <path d="M16 8.016A8.522 8.522 0 008.016 16h-.032A8.521 8.521 0 000 8.016v-.032A8.521 8.521 0 007.984 0h.032A8.522 8.522 0 0016 7.984v.032z"></path>
-                      </svg>
-                      <span className="w-fit">{model.name}</span>
-                      <button className="p-1.5">
+                      <ModelIcon modelId={model.id} />
+                      <span className="w-fit">{getModelName(model.name)}</span>
+                      {/* <button className="p-1.5">
                         <InfoIcon className="size-3 text-color-heading" />
-                      </button>
+                      </button> */}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {model.supported_parameters.includes('reasoning') && <ModelFeature feature="reasoning" hideLabel />}
-                      {model.architecture.input_modalities.includes('image') && <ModelFeature feature="vision" hideLabel />}
-                      {model.architecture.input_modalities.includes('file') && <ModelFeature feature="pdfs" hideLabel />}
-                      {model.description.includes('fast') && <ModelFeature feature="fast" hideLabel />}
-                      {/* {model.description.includes('search') && <ModelFeature feature="search" hideLabel />} */}
-                      {/* {model.description.includes('effortControl') && <ModelFeature feature="effortControl" hideLabel />} */}
-                    </div>
+                    <ModelFeatures model={model} />
                   </div>
                 </CommandItem>
               ))}

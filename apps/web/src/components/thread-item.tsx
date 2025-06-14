@@ -42,7 +42,11 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
         prefetch={true}
       >
         <div className="relative flex w-full items-center">
-          {thread.parentThreadId && <SplitIcon className="mr-1 size-4 text-muted-foreground/50 hover:text-muted-foreground" />}
+          {thread.parentThreadId && (
+            <button type="button" onClick={() => setChatId(thread.parentThreadId!)}>
+              <SplitIcon className="mr-1 size-4 text-muted-foreground/50 hover:text-muted-foreground" />
+            </button>
+          )}
           <button className="w-full">
             <div className="relative w-full">
               <input
