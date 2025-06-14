@@ -187,25 +187,46 @@ export const branchOff = mutationWithSession({
       model: modelId,
     });
 
-    // Copy messages to new thread
-    await Promise.all(
-      messagesUntilId.map((message) =>
-        ctx.db.insert('messages', {
-          content: message.content,
-          threadId: newThreadId,
-          role: message.role,
-          userId: message.userId,
-          responseStreamId: message.responseStreamId,
-          model: message.model,
-          completionTokens: message.completionTokens,
-          promptTokens: message.promptTokens,
-          totalTokens: message.totalTokens,
-          durationSeconds: message.durationSeconds,
-          tokensPerSecond: message.tokensPerSecond,
-          reasoning: message.reasoning,
-        }),
-      ),
-    );
+    // Copy messages to new thread with search results
+    for (const message of messagesUntilId) {
+      const newMessageId = await ctx.db.insert('messages', {
+        content: message.content,
+        threadId: newThreadId,
+        role: message.role,
+        userId: message.userId,
+        responseStreamId: message.responseStreamId,
+        model: message.model,
+        completionTokens: message.completionTokens,
+        promptTokens: message.promptTokens,
+        totalTokens: message.totalTokens,
+        durationSeconds: message.durationSeconds,
+        tokensPerSecond: message.tokensPerSecond,
+        reasoning: message.reasoning,
+        isSearching: message.isSearching,
+        searchQueries: message.searchQueries,
+      });
+
+      if (message.searchQueries && message.searchQueries.length > 0) {
+        const searchResults = await ctx.db
+          .query('messageSearchResults')
+          .withIndex('by_messageId', (q) => q.eq('messageId', message._id))
+          .collect();
+
+        await Promise.all(
+          searchResults.map((result) =>
+            ctx.db.insert('messageSearchResults', {
+              chunksTitle: result.chunksTitle,
+              chunksUri: result.chunksUri,
+              confidenceScore: result.confidenceScore,
+              startIndex: result.startIndex,
+              endIndex: result.endIndex,
+              text: result.text,
+              messageId: newMessageId,
+            }),
+          ),
+        );
+      }
+    }
 
     return newThreadId;
   },

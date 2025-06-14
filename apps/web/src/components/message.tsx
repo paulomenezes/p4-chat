@@ -1,13 +1,14 @@
 import { cn, getModelNameFromId, sanitizeText } from '@/lib/utils';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
-import { SquarePenIcon, ChevronRightIcon, ChevronDownIcon, ZapIcon, CpuIcon, ClockIcon, InfoIcon } from 'lucide-react';
+import { SquarePenIcon } from 'lucide-react';
 import { Markdown } from './markdown';
 import { CopyToClipboard } from './copy-to-clipboard';
 import type { SessionId } from 'convex-helpers/server/sessions';
-import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Retry } from './retry';
 import { BranchOff } from './branch-off';
+import { MessageReasoning } from './message-reasoning';
+import { MessageSearch } from './message-search';
+import { MessageStats, MessageStatsMobile } from './message-stats';
 
 export function Message({
   message,
@@ -67,29 +68,9 @@ function AssistantMessage({
   sessionId: SessionId | undefined;
   onRetry: (modelId: string | undefined) => void;
 }) {
-  const [isReasoningOpen, setIsReasoningOpen] = useState(false);
-
   return (
     <div className="group relative w-full max-w-full break-words">
-      {message.reasoning && (
-        <div className="flex items-center gap-2">
-          <div className="mb-4 max-w-full">
-            <button
-              className="mb-2 flex select-none items-center gap-2 text-sm text-secondary-foreground cursor-pointer"
-              aria-label="Hide reasoning"
-              onClick={() => setIsReasoningOpen((prev) => !prev)}
-            >
-              {isReasoningOpen ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
-              Reasoning
-            </button>
-            {isReasoningOpen && (
-              <div className="prose prose-pink max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
-                <Markdown>{sanitizeText(message.reasoning)}</Markdown>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <MessageReasoning message={message} />
 
       <div
         role="article"
@@ -99,6 +80,8 @@ function AssistantMessage({
         <span className="sr-only">Assistant Reply: </span>
         <Markdown>{sanitizeText(message.content)}</Markdown>
       </div>
+
+      <MessageSearch message={message} />
 
       {message.stopped && (
         <div className="mt-4 flex items-start gap-3 rounded-lg bg-red-500/15 px-4 py-3 text-sm text-red-900 dark:text-red-400" role="alert">
@@ -118,65 +101,14 @@ function AssistantMessage({
             </div>
           </div>
 
-          {!!message.tokensPerSecond ||
-            !!message.totalTokens ||
-            (!!message.durationSeconds && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" className="flex h-8 w-8 flex-row items-center justify-center sm:hidden">
-                    <InfoIcon className="size-4 rounded-lg p-0 text-muted-foreground" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit">
-                  <div className="flex flex-col gap-2 text-xs text-muted-foreground">
-                    {!!message.tokensPerSecond && (
-                      <div className="flex items-center gap-1">
-                        <ZapIcon className="size-3" />
-                        <span>{message.tokensPerSecond.toFixed(2)} tok/sec</span>
-                      </div>
-                    )}
-                    {!!message.totalTokens && (
-                      <div className="flex items-center gap-1">
-                        <CpuIcon className="size-3" />
-                        <span>{message.totalTokens} tokens</span>
-                      </div>
-                    )}
-                    {!!message.durationSeconds && (
-                      <div className="flex items-center gap-1">
-                        <ClockIcon className="size-3" />
-                        <span>{message.durationSeconds.toFixed(2)} sec</span>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ))}
+          <MessageStatsMobile message={message} />
         </div>
         <div className="hidden flex-row gap-2 sm:flex">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span>{getModelNameFromId(message.model)}</span>
           </div>
 
-          <div className="flex flex-row gap-2 text-xs text-muted-foreground">
-            {!!message.tokensPerSecond && (
-              <div className="flex items-center gap-1">
-                <ZapIcon className="size-3" />
-                <span>{message.tokensPerSecond.toFixed(2)} tok/sec</span>
-              </div>
-            )}
-            {!!message.totalTokens && (
-              <div className="flex items-center gap-1">
-                <CpuIcon className="size-3" />
-                <span>{message.totalTokens} tokens</span>
-              </div>
-            )}
-            {!!message.durationSeconds && (
-              <div className="flex items-center gap-1">
-                <ClockIcon className="size-3" />
-                <span>{message.durationSeconds.toFixed(2)} sec</span>
-              </div>
-            )}
-          </div>
+          <MessageStats message={message} />
         </div>
       </div>
     </div>

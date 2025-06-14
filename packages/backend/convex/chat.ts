@@ -7,6 +7,7 @@ import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { MODELS } from '../models';
 import { type SessionId } from 'convex-helpers/server/sessions';
+import { google, GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
 
 export const streamChat = httpAction(async (ctx, request) => {
   const body = (await request.json()) as {
@@ -30,11 +31,18 @@ export const streamChat = httpAction(async (ctx, request) => {
       apiKey: process.env.OPENROUTER_API_KEY,
     });
 
-    const startTime = Date.now();
-    const model = history?.[history.length - 1]?.model ?? userConfig?.currentlySelectedModel ?? MODELS[0].id;
+    const latestMessage = history?.[history.length - 1];
+    const isSearching = latestMessage?.isSearching ?? false;
 
-    const { fullStream } = streamText({
-      model: openrouter(model),
+    const startTime = Date.now();
+    const model = latestMessage?.model ?? userConfig?.currentlySelectedModel ?? MODELS[0].id;
+
+    const { fullStream, providerMetadata } = streamText({
+      model: isSearching
+        ? google('gemini-2.0-flash', {
+            useSearchGrounding: true,
+          })
+        : openrouter(isSearching ? `${model}:online` : model),
       messages: history.map((message) => ({
         role: message.role,
         content: message.content,
@@ -42,6 +50,15 @@ export const streamChat = httpAction(async (ctx, request) => {
       onFinish: async (message) => {
         const endTime = Date.now();
         const durationSeconds = (endTime - startTime) / 1000;
+
+        let metadata: GoogleGenerativeAIProviderMetadata | undefined = undefined;
+
+        try {
+          const meta = await providerMetadata;
+          metadata = meta?.google as GoogleGenerativeAIProviderMetadata | undefined;
+        } catch (error) {
+          console.error('Error getting provider metadata', error);
+        }
 
         await ctx.runMutation(internal.messages.updateMessage, {
           streamId,
@@ -53,6 +70,7 @@ export const streamChat = httpAction(async (ctx, request) => {
           durationSeconds,
           tokensPerSecond: durationSeconds > 0 ? message.usage.totalTokens / durationSeconds : 0,
           reasoning: message.reasoning,
+          searchMetadata: metadata ? JSON.stringify(metadata) : undefined,
         });
       },
     });

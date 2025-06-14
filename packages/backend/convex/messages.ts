@@ -1,10 +1,12 @@
-import { internalMutation, internalQuery, mutation } from './_generated/server';
+import { internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { streamingComponent } from './streaming';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
 import { MODELS } from '../models';
+import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { Doc, Id } from './_generated/dataModel';
 
 export const listMessages = queryWithSession({
   args: {
@@ -28,6 +30,7 @@ export const sendMessage = mutationWithSession({
   args: {
     prompt: v.string(),
     threadId: v.optional(v.id('threads')),
+    isSearching: v.boolean(),
   },
   handler: async (ctx, args) => {
     const userId = ctx.userId;
@@ -75,6 +78,7 @@ export const sendMessage = mutationWithSession({
       userId,
       responseStreamId,
       model,
+      isSearching: args.isSearching,
     });
 
     return { threadId, messageId };
@@ -169,6 +173,7 @@ export const getHistory = internalQuery({
             ? await streamingComponent.getStreamBody(ctx, userMessage.responseStreamId as StreamId)
             : undefined,
           model: userMessage.model,
+          isSearching: userMessage.isSearching,
         };
       }),
     );
@@ -178,6 +183,7 @@ export const getHistory = internalQuery({
         role: 'user' as const,
         content: joined.userMessage.content,
         model: joined.model,
+        isSearching: joined.isSearching,
       };
 
       // If the assistant message is empty, its probably because we have not
@@ -190,6 +196,7 @@ export const getHistory = internalQuery({
         role: 'assistant' as const,
         content: joined.responseMessage.text,
         model: joined.model,
+        isSearching: joined.isSearching,
       };
 
       return [user, assistant];
@@ -208,6 +215,7 @@ export const updateMessage = internalMutation({
     durationSeconds: v.number(),
     tokensPerSecond: v.number(),
     reasoning: v.optional(v.string()),
+    searchMetadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const message = await ctx.db
@@ -219,8 +227,44 @@ export const updateMessage = internalMutation({
       throw new Error('Message not found');
     }
 
-    await Promise.all([
-      ctx.db.patch(message._id, { responseStreamId: undefined }),
+    let webSearchQueries: string[] = [];
+    const searchResults: Omit<Doc<'messageSearchResults'>, '_id' | '_creationTime' | 'messageId'>[] = [];
+
+    if (args.searchMetadata) {
+      const searchMetadata = JSON.parse(args.searchMetadata) as GoogleGenerativeAIProviderMetadata | undefined;
+
+      if (searchMetadata) {
+        webSearchQueries = searchMetadata.groundingMetadata?.webSearchQueries ?? [];
+        const groundingChunks = searchMetadata.groundingMetadata?.groundingChunks ?? [];
+        const groundingSupports = searchMetadata.groundingMetadata?.groundingSupports ?? [];
+
+        for (const support of groundingSupports) {
+          for (let index = 0; index < (support.confidenceScores?.length ?? 0); index++) {
+            const score = support.confidenceScores?.[index];
+            const chunkIndex = support.groundingChunkIndices?.[index];
+
+            if (score === undefined || chunkIndex === undefined) {
+              continue;
+            }
+
+            const chunk = groundingChunks?.[chunkIndex];
+
+            if (chunk) {
+              searchResults.push({
+                startIndex: support.segment.startIndex ?? undefined,
+                endIndex: support.segment.endIndex ?? undefined,
+                text: support.segment.text ?? '',
+                confidenceScore: score,
+                chunksUri: chunk.web?.uri ?? '',
+                chunksTitle: chunk.web?.title ?? '',
+              });
+            }
+          }
+        }
+      }
+    }
+
+    const [newMessage] = await Promise.all([
       ctx.db.insert('messages', {
         content: args.content,
         threadId: message.threadId,
@@ -233,8 +277,20 @@ export const updateMessage = internalMutation({
         durationSeconds: args.durationSeconds,
         tokensPerSecond: args.tokensPerSecond,
         reasoning: args.reasoning,
+        searchQueries: webSearchQueries,
+        isSearching: webSearchQueries.length > 0,
       }),
+      ctx.db.patch(message._id, { responseStreamId: undefined }),
     ]);
+
+    await Promise.all(
+      searchResults.map((result) =>
+        ctx.db.insert('messageSearchResults', {
+          messageId: newMessage,
+          ...result,
+        }),
+      ),
+    );
   },
 });
 
@@ -271,5 +327,50 @@ export const stopStreaming = mutation({
         stopped: true,
       }),
     ]);
+  },
+});
+
+export const getMessageSearchResults = query({
+  args: {
+    messageId: v.id('messages'),
+  },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query('messageSearchResults')
+      .withIndex('by_messageId', (q) => q.eq('messageId', args.messageId))
+      .collect();
+
+    const groupedByText = results.reduce(
+      (acc, result) => {
+        if (!acc[result.text]) {
+          acc[result.text] = {
+            _id: result._id,
+            text: result.text,
+            chunks: [],
+          };
+        }
+
+        acc[result.text].chunks.push({
+          confidenceScore: result.confidenceScore,
+          chunksUri: result.chunksUri,
+          chunksTitle: result.chunksTitle,
+        });
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          _id: Id<'messageSearchResults'>;
+          text: string;
+          chunks: Array<{
+            confidenceScore: number;
+            chunksUri: string;
+            chunksTitle: string;
+          }>;
+        }
+      >,
+    );
+
+    return Object.values(groupedByText);
   },
 });

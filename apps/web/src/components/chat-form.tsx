@@ -5,17 +5,22 @@ import { ArrowUpIcon, GlobeIcon, PaperclipIcon, SquareIcon } from 'lucide-react'
 import { ModelSelector } from './model-selector';
 import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
+import { Button } from './ui/button';
 
 export function ChatForm({
   input,
   currentStreamId,
   inputRef,
+  isSearching,
+  setIsSearching,
   handleInputChange,
   handleSubmit,
 }: {
   input: string;
   currentStreamId: string | undefined;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  isSearching: boolean;
+  setIsSearching: (isSearching: boolean) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (
     event?: {
@@ -83,15 +88,17 @@ export function ChatForm({
             <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
               <div className="ml-[-7px] flex items-center gap-1">
                 <ModelSelector />
-                <button
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 px-3 text-xs -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 py-1.5 pl-2 pr-2.5 text-muted-foreground max-sm:p-2"
-                  type="button"
-                  aria-label="Enable search"
-                  data-state="closed"
+
+                <Button
+                  size="xs"
+                  className="rounded-full pl-2 pr-2.5 -mb-1.5"
+                  variant={isSearching ? 'default' : 'outline'}
+                  onClick={() => setIsSearching(!isSearching)}
                 >
                   <GlobeIcon className="h-4 w-4 scale-x-[-1]" />
                   <span className="max-sm:hidden">Search</span>
-                </button>
+                </Button>
+
                 <label
                   className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 text-xs cursor-pointer -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2"
                   aria-label="Attach a file"

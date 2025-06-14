@@ -44,8 +44,19 @@ export default defineSchema({
     tokensPerSecond: v.optional(v.number()),
     reasoning: v.optional(v.string()),
     stopped: v.optional(v.boolean()),
+    isSearching: v.optional(v.boolean()),
+    searchQueries: v.optional(v.array(v.string())),
   })
     .index('by_threadId', ['threadId', 'userId'])
     .index('by_userId', ['userId'])
     .index('by_streamId', ['responseStreamId']),
+  messageSearchResults: defineTable({
+    messageId: v.id('messages'),
+    startIndex: v.optional(v.number()),
+    endIndex: v.optional(v.number()),
+    text: v.string(),
+    confidenceScore: v.number(),
+    chunksUri: v.string(),
+    chunksTitle: v.string(),
+  }).index('by_messageId', ['messageId']),
 });

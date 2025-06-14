@@ -35,6 +35,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   const sendMessage = useMutation(api.messages.sendMessage);
   const retryMessage = useMutation(api.messages.retryMessage);
   const [inputValue, setInputValue] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [isIntersecting, setIntersecting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -150,6 +151,8 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                   <ChatForm
                     input={inputValue}
                     handleInputChange={(event) => setInputValue(event.target.value)}
+                    isSearching={isSearching}
+                    setIsSearching={setIsSearching}
                     currentStreamId={currentStreamId}
                     inputRef={inputRef}
                     handleSubmit={async (e) => {
@@ -167,6 +170,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                         prompt: inputValue,
                         threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
                         sessionId,
+                        isSearching,
                       });
 
                       setChatId(threadId);
