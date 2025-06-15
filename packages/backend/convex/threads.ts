@@ -1,5 +1,5 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { internalAction, internalMutation, mutation, query } from './_generated/server';
+import { internalAction, internalMutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
@@ -184,26 +184,14 @@ export const branchOff = mutationWithSession({
       userId,
       pinned: false, // New branch starts unpinned
       parentThreadId: id,
-      model: modelId,
+      model: modelId ?? sourceThread.model,
     });
 
     // Copy messages to new thread with search results
     for (const message of messagesUntilId) {
       const newMessageId = await ctx.db.insert('messages', {
-        content: message.content,
+        ...message,
         threadId: newThreadId,
-        role: message.role,
-        userId: message.userId,
-        responseStreamId: message.responseStreamId,
-        model: message.model,
-        completionTokens: message.completionTokens,
-        promptTokens: message.promptTokens,
-        totalTokens: message.totalTokens,
-        durationSeconds: message.durationSeconds,
-        tokensPerSecond: message.tokensPerSecond,
-        reasoning: message.reasoning,
-        isSearching: message.isSearching,
-        searchQueries: message.searchQueries,
       });
 
       if (message.searchQueries && message.searchQueries.length > 0) {

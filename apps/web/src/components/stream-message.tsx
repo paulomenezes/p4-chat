@@ -6,10 +6,10 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useMemo, useState } from 'react';
 import { useAuthToken } from '@convex-dev/auth/react';
 import { useSessionId } from 'convex-helpers/react/sessions';
-import { sanitizeText } from '@/lib/utils';
+import { isImageGenerationModel, sanitizeText } from '@/lib/utils';
 import { Markdown } from './markdown';
 import { ChevronDownIcon, ChevronRightIcon, Loader2Icon } from 'lucide-react';
-import { Loading } from './loading';
+import { Loading, LoadingImage } from './loading';
 
 export default function ServerMessage({
   message,
@@ -62,14 +62,6 @@ export default function ServerMessage({
     return [textContent, reasoningContent, hasEnded];
   }, [text]);
 
-  const isCurrentlyStreaming = useMemo(() => {
-    if (!isDriven) {
-      return false;
-    }
-
-    return status === 'pending' || status === 'streaming';
-  }, [isDriven, status]);
-
   return (
     <div className="md-answer">
       <div className="group relative w-full max-w-full break-words">
@@ -99,7 +91,7 @@ export default function ServerMessage({
           aria-label="Assistant message"
           className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
         >
-          {text.length === 0 && <Loading />}
+          {text.length === 0 && status !== 'error' && <>{isImageGenerationModel(message.model) ? <LoadingImage /> : <Loading />}</>}
 
           <span className="sr-only">Assistant Reply: </span>
           <Markdown disableHighlight>{sanitizeText(textContent)}</Markdown>

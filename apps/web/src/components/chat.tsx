@@ -9,11 +9,12 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useQueryState } from 'nuqs';
 import dynamic from 'next/dynamic';
 import { NewChatMessages } from './new-chat-messages';
-import { ChevronDownIcon, MoonIcon, Settings2Icon } from 'lucide-react';
+import { ChevronDownIcon, Settings2Icon } from 'lucide-react';
 import { useQueryWithStatus } from '@/hooks/use-query';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { setSessionIdCookie } from '@/actions/set-cookies';
 import type { SessionId } from 'convex-helpers/server/sessions';
+import { ModeToggle } from './mode-toggle';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
@@ -244,13 +245,8 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                   <Settings2Icon className="size-4" />
                 </button>
               </a>
-              <button
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 group relative size-8"
-                tabIndex={-1}
-              >
-                <MoonIcon className="size-4 rotate-0 scale-100 transition-all duration-200" />
-                <span className="sr-only">Toggle theme</span>
-              </button>
+
+              <ModeToggle />
             </div>
           </div>
           <div

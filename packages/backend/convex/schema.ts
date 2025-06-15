@@ -46,6 +46,7 @@ export default defineSchema({
     stopped: v.optional(v.boolean()),
     isSearching: v.optional(v.boolean()),
     searchQueries: v.optional(v.array(v.string())),
+    files: v.optional(v.array(v.id('_storage'))),
   })
     .index('by_threadId', ['threadId', 'userId'])
     .index('by_userId', ['userId'])

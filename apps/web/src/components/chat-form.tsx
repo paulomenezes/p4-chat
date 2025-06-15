@@ -1,11 +1,14 @@
 'use client';
 
 import type { ChatRequestOptions } from 'ai';
-import { ArrowUpIcon, GlobeIcon, PaperclipIcon, SquareIcon } from 'lucide-react';
+import { ArrowUpIcon, GlobeIcon, SquareIcon } from 'lucide-react';
 import { ModelSelector } from './model-selector';
 import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { Button } from './ui/button';
+import { Uploader } from './uploader';
+import { useFileUpload } from '@/hooks/use-file-upload';
+import { UploaderFileList } from './uploader-file-list';
 
 export function ChatForm({
   input,
@@ -31,6 +34,17 @@ export function ChatForm({
 }) {
   const stopStreaming = useMutation(api.messages.stopStreaming);
 
+  const maxSizeMB = 5;
+  const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
+  const maxFiles = 6;
+
+  const [{ files }, { openFileDialog, removeFile, getInputProps }] = useFileUpload({
+    accept: 'image/svg+xml,image/png,image/jpeg,image/jpg,image/gif,application/pdf,text/plain',
+    maxSize,
+    multiple: true,
+    maxFiles,
+  });
+
   return (
     <div>
       <form
@@ -42,7 +56,7 @@ export function ChatForm({
         onSubmit={handleSubmit}
       >
         <div className="flex flex-grow flex-col">
-          <div></div>
+          <UploaderFileList files={files} removeFile={removeFile} />
           <div className="flex flex-grow flex-row items-start">
             <textarea
               placeholder="Type your message here..."
@@ -99,17 +113,7 @@ export function ChatForm({
                   <span className="max-sm:hidden">Search</span>
                 </Button>
 
-                <label
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 text-xs cursor-pointer -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2"
-                  aria-label="Attach a file"
-                  data-state="closed"
-                >
-                  <input multiple={false} className="sr-only" type="file" />
-                  <div className="flex gap-1">
-                    <PaperclipIcon className="size-4" />
-                    <span className="max-sm:hidden sm:ml-0.5">Attach</span>
-                  </div>
-                </label>
+                <Uploader getInputProps={getInputProps} openFileDialog={openFileDialog} />
               </div>
             </div>
           </div>

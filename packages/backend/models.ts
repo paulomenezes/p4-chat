@@ -1130,6 +1130,38 @@ export const MODELS = [
       'seed',
     ],
   },
+  {
+    id: 'openai/gpt-image-1',
+    hugging_face_id: '',
+    name: 'OpenAI: GPT ImageGen',
+    created: 1744824212,
+    description:
+      'OpenAI o4-mini-high is the same model as [o4-mini](/openai/o4-mini) with reasoning_effort set to high. \n\nOpenAI o4-mini is a compact reasoning model in the o-series, optimized for fast, cost-efficient performance while retaining strong multimodal and agentic capabilities. It supports tool use and demonstrates competitive reasoning and coding performance across benchmarks like AIME (99.5% with Python) and SWE-bench, outperforming its predecessor o3-mini and even approaching o3 in some domains.\n\nDespite its smaller size, o4-mini exhibits high accuracy in STEM tasks, visual problem solving (e.g., MathVista, MMMU), and code editing. It is especially well-suited for high-throughput scenarios where latency or cost is critical. Thanks to its efficient architecture and refined reinforcement learning training, o4-mini can chain tools, generate structured outputs, and solve multi-step tasks with minimal delay—often in under a minute.',
+    context_length: 200000,
+    architecture: {
+      modality: 'text+image->text',
+      input_modalities: ['image', 'text', 'file'],
+      output_modalities: ['text'],
+      tokenizer: 'Other',
+      instruct_type: null,
+    },
+    pricing: {
+      prompt: '0.0000011',
+      completion: '0.0000044',
+      request: '0',
+      image: '0.0008415',
+      web_search: '0',
+      internal_reasoning: '0',
+      input_cache_read: '0.000000275',
+    },
+    top_provider: {
+      context_length: 200000,
+      max_completion_tokens: 100000,
+      is_moderated: true,
+    },
+    per_request_limits: null,
+    supported_parameters: ['tools', 'tool_choice', 'seed', 'max_tokens', 'response_format', 'structured_outputs'],
+  },
 ];
 
 // export const MODELS = [

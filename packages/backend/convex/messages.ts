@@ -5,8 +5,8 @@ import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
 import { MODELS } from '../models';
-import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
-import { Doc, Id } from './_generated/dataModel';
+import { type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { type Doc, type Id } from './_generated/dataModel';
 
 export const listMessages = queryWithSession({
   args: {
@@ -216,6 +216,7 @@ export const updateMessage = internalMutation({
     tokensPerSecond: v.number(),
     reasoning: v.optional(v.string()),
     searchMetadata: v.optional(v.string()),
+    files: v.optional(v.array(v.id('_storage'))),
   },
   handler: async (ctx, args) => {
     const message = await ctx.db
@@ -279,6 +280,7 @@ export const updateMessage = internalMutation({
         reasoning: args.reasoning,
         searchQueries: webSearchQueries,
         isSearching: webSearchQueries.length > 0,
+        files: args.files,
       }),
       ctx.db.patch(message._id, { responseStreamId: undefined }),
     ]);

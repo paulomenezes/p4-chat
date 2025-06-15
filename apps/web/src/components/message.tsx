@@ -1,14 +1,16 @@
-import { cn, getModelNameFromId, sanitizeText } from '@/lib/utils';
+import { cn, getModelNameFromId, isImageGenerationModel, sanitizeText } from '@/lib/utils';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { SquarePenIcon } from 'lucide-react';
 import { Markdown } from './markdown';
-import { CopyToClipboard } from './copy-to-clipboard';
+import { CopyImageToClipboard, CopyToClipboard } from './copy-to-clipboard';
 import type { SessionId } from 'convex-helpers/server/sessions';
 import { Retry } from './retry';
 import { BranchOff } from './branch-off';
 import { MessageReasoning } from './message-reasoning';
 import { MessageSearch } from './message-search';
 import { MessageStats, MessageStatsMobile } from './message-stats';
+import { MessageFiles } from './message-files';
+import { MessageAIContent } from './message-ai-content';
 
 export function Message({
   message,
@@ -71,16 +73,8 @@ function AssistantMessage({
   return (
     <div className="group relative w-full max-w-full break-words">
       <MessageReasoning message={message} />
-
-      <div
-        role="article"
-        aria-label="Assistant message"
-        className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
-      >
-        <span className="sr-only">Assistant Reply: </span>
-        <Markdown>{sanitizeText(message.content)}</Markdown>
-      </div>
-
+      <MessageAIContent message={message} />
+      <MessageFiles files={message.files ?? []} />
       <MessageSearch message={message} />
 
       {message.stopped && (
@@ -92,7 +86,12 @@ function AssistantMessage({
       <div className="absolute left-0 -ml-0.5 mt-2 flex w-full flex-row justify-start gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus:opacity-100">
         <div className="flex w-full flex-row justify-between gap-1 sm:w-auto">
           <div className="flex items-center gap-1">
-            <CopyToClipboard content={message.content} variant="ghost" />
+            {isImageGenerationModel(message.model) && message.files?.[0] ? (
+              <CopyImageToClipboard storageId={message.files[0]} variant="ghost" />
+            ) : (
+              <CopyToClipboard content={message.content} variant="ghost" />
+            )}
+
             <BranchOff message={message} sessionId={sessionId} variant="ghost" />
             <Retry onRetry={onRetry} variant="ghost" />
 

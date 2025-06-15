@@ -29,3 +29,7 @@ export function getModelNameFromId(modelId?: string | null) {
 
   return getModelName(name);
 }
+
+export function isImageGenerationModel(modelId?: string | null) {
+  return modelId === 'openai/gpt-image-1';
+}

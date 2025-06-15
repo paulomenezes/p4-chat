@@ -2,9 +2,6 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import '../index.css';
 import Providers from '@/components/providers';
-import { SidebarInset } from '@/components/ui/sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
 import { ConvexAuthNextjsServerProvider } from '@convex-dev/auth/nextjs/server';
 import Script from 'next/script';
 
@@ -29,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ConvexAuthNextjsServerProvider>
-      <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <ConvexAuthNextjsServerProvider>
         <head>
           <Script id="markdown-it-fix" strategy="beforeInteractive">
             {`
@@ -47,7 +44,7 @@ export default function RootLayout({
         >
           <Providers>{children}</Providers>
         </body>
-      </html>
-    </ConvexAuthNextjsServerProvider>
+      </ConvexAuthNextjsServerProvider>
+    </html>
   );
 }
