@@ -8,6 +8,7 @@ import { GitHub } from '@/icons/github';
 import { ApiKeys } from '@/components/api-keys';
 import { SettingsHeader } from '@/components/settings-header';
 import { redirect } from 'next/navigation';
+import { SettingsAttachments } from '@/components/settings-attachments';
 
 export default async function SettingsPage() {
   const user = await fetchQuery(
@@ -108,10 +109,17 @@ export default async function SettingsPage() {
                   </div>
                 </TabsContent>
                 <TabsContent value="attachments">
-                  <div className="mt-2 space-y-8">
-                    <div className="space-y-4">
+                  <div className="mt-2 space-y-4">
+                    <div className="space-y-1">
                       <h2 className="text-2xl font-bold">Attachments</h2>
+                      <p className="mt-2 text-sm text-muted-foreground/80 sm:text-base">
+                        Manage your uploaded files and attachments. Note that deleting files here will remove them from the relevant
+                        threads, but not delete the threads. This may lead to unexpected behavior if you delete a file that is still being
+                        used in a thread.
+                      </p>
                     </div>
+
+                    <SettingsAttachments />
                   </div>
                 </TabsContent>
                 <TabsContent value="about">

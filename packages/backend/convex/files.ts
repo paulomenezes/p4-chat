@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { mutationWithSession } from './utils';
+import { mutationWithSession, queryWithSession } from './utils';
 
 export const generateUploadUrl = mutation({
   handler: async (ctx) => {
@@ -54,6 +54,31 @@ export const deleteById = mutation({
   },
 });
 
+export const deleteByIds = mutation({
+  args: {
+    storageIds: v.array(v.id('_storage')),
+  },
+  handler: async (ctx, args) => {
+    const operations: Promise<any>[] = [];
+
+    for (const storageId of args.storageIds) {
+      const attachment = await ctx.db
+        .query('attachments')
+        .withIndex('by_storageId', (q) => q.eq('storageId', storageId))
+        .unique();
+
+      if (attachment) {
+        operations.push(ctx.db.delete(attachment._id));
+        operations.push(ctx.storage.delete(storageId));
+      } else {
+        operations.push(ctx.storage.delete(storageId));
+      }
+    }
+
+    await Promise.all(operations);
+  },
+});
+
 export const addAttachment = mutationWithSession({
   args: {
     storageId: v.id('_storage'),
@@ -66,5 +91,22 @@ export const addAttachment = mutationWithSession({
       ...args,
       userId: ctx.userId,
     });
+  },
+});
+
+export const getAttachments = queryWithSession({
+  args: {},
+  handler: async (ctx) => {
+    const userId = ctx.userId;
+    console.log('userId', userId);
+
+    if (!userId) {
+      return [];
+    }
+
+    return await ctx.db
+      .query('attachments')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .collect();
   },
 });
