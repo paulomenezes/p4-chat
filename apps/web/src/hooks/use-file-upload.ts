@@ -1,7 +1,12 @@
 'use client';
 
+import { api } from '@p4-chat/backend/convex/_generated/api';
+import type { Id } from '@p4-chat/backend/convex/_generated/dataModel';
+import type { SessionId } from 'convex-helpers/server/sessions';
+import { useMutation } from 'convex/react';
 import type React from 'react';
 import { useCallback, useRef, useState, type ChangeEvent, type DragEvent, type InputHTMLAttributes } from 'react';
+import { toast } from 'sonner';
 
 export type FileMetadata = {
   name: string;
@@ -15,6 +20,8 @@ export type FileWithPreview = {
   file: File | FileMetadata;
   id: string;
   preview?: string;
+  storageId?: Id<'_storage'>;
+  isLoading?: boolean;
 };
 
 export type FileUploadOptions = {
@@ -25,19 +32,18 @@ export type FileUploadOptions = {
   initialFiles?: FileMetadata[];
   onFilesChange?: (files: FileWithPreview[]) => void; // Callback when files change
   onFilesAdded?: (addedFiles: FileWithPreview[]) => void; // Callback when new files are added
+  sessionId?: SessionId;
 };
 
 export type FileUploadState = {
   files: FileWithPreview[];
   isDragging: boolean;
-  errors: string[];
 };
 
 export type FileUploadActions = {
   addFiles: (files: FileList | File[]) => void;
   removeFile: (id: string) => void;
   clearFiles: () => void;
-  clearErrors: () => void;
   handleDragEnter: (e: DragEvent<HTMLElement>) => void;
   handleDragLeave: (e: DragEvent<HTMLElement>) => void;
   handleDragOver: (e: DragEvent<HTMLElement>) => void;
@@ -58,7 +64,12 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
     initialFiles = [],
     onFilesChange,
     onFilesAdded,
+    sessionId,
   } = options;
+
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const addAttachment = useMutation(api.files.addAttachment);
+  const deleteAttachment = useMutation(api.files.deleteById);
 
   const [state, setState] = useState<FileUploadState>({
     files: initialFiles.map((file) => ({
@@ -67,7 +78,6 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
       preview: file.url,
     })),
     isDragging: false,
-    errors: [],
   });
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +150,6 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
       const newState = {
         ...prev,
         files: [],
-        errors: [],
       };
 
       onFilesChange?.(newState.files);
@@ -149,14 +158,10 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
   }, [onFilesChange]);
 
   const addFiles = useCallback(
-    (newFiles: FileList | File[]) => {
+    async (newFiles: FileList | File[]) => {
       if (!newFiles || newFiles.length === 0) return;
 
       const newFilesArray = Array.from(newFiles);
-      const errors: string[] = [];
-
-      // Clear existing errors when new files are uploaded
-      setState((prev) => ({ ...prev, errors: [] }));
 
       // In single file mode, clear existing files first
       if (!multiple) {
@@ -165,8 +170,7 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
 
       // Check if adding these files would exceed maxFiles (only in multiple mode)
       if (multiple && maxFiles !== Infinity && state.files.length + newFilesArray.length > maxFiles) {
-        errors.push(`You can only upload a maximum of ${maxFiles} files.`);
-        setState((prev) => ({ ...prev, errors }));
+        toast.error(`You can only upload a maximum of ${maxFiles} files.`);
         return;
       }
 
@@ -187,7 +191,7 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
 
         // Check file size
         if (file.size > maxSize) {
-          errors.push(
+          toast.error(
             multiple
               ? `Some files exceed the maximum size of ${formatBytes(maxSize)}.`
               : `File exceeds the maximum size of ${formatBytes(maxSize)}.`,
@@ -197,35 +201,96 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
 
         const error = validateFile(file);
         if (error) {
-          errors.push(error);
+          toast.error(error);
         } else {
           validFiles.push({
             file,
             id: generateUniqueId(file),
             preview: createPreview(file),
+            isLoading: true,
+            storageId: undefined,
           });
         }
       });
 
       // Only update state if we have valid files to add
       if (validFiles.length > 0) {
-        // Call the onFilesAdded callback with the newly added valid files
-        onFilesAdded?.(validFiles);
-
+        // First update state with loading files
         setState((prev) => {
           const newFiles = !multiple ? validFiles : [...prev.files, ...validFiles];
           onFilesChange?.(newFiles);
           return {
             ...prev,
             files: newFiles,
-            errors,
           };
         });
-      } else if (errors.length > 0) {
-        setState((prev) => ({
-          ...prev,
-          errors,
-        }));
+
+        // Call the onFilesAdded callback with the newly added valid files
+        onFilesAdded?.(validFiles);
+
+        toast.promise(
+          Promise.all(
+            validFiles.map(async (file) => {
+              try {
+                const uploadUrl = await generateUploadUrl();
+                const result = await fetch(uploadUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': file.file.type },
+                  // @ts-ignore
+                  body: file.file,
+                });
+
+                const { storageId } = await result.json();
+
+                if (!sessionId) {
+                  return;
+                }
+
+                await addAttachment({
+                  storageId,
+                  name: file.file.name,
+                  size: file.file.size,
+                  type: file.file.type,
+                  sessionId,
+                });
+
+                // Update state with storage ID and set loading to false
+                setState((prev) => {
+                  const updatedFiles = prev.files.map((f) =>
+                    f.id === file.id
+                      ? {
+                          ...f,
+                          storageId,
+                          isLoading: false,
+                        }
+                      : f,
+                  );
+                  onFilesChange?.(updatedFiles);
+                  return {
+                    ...prev,
+                    files: updatedFiles,
+                  };
+                });
+              } catch (error) {
+                // Handle upload error
+                setState((prev) => {
+                  const updatedFiles = prev.files.filter((f) => f.id !== file.id);
+                  onFilesChange?.(updatedFiles);
+                  toast.error(`Failed to upload ${file.file.name}`);
+                  return {
+                    ...prev,
+                    files: updatedFiles,
+                  };
+                });
+              }
+            }),
+          ),
+          {
+            loading: 'Uploading files...',
+            success: 'Files uploaded successfully',
+            error: 'Failed to upload files',
+          },
+        );
       }
 
       // Reset input value after handling files
@@ -233,36 +298,56 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
         inputRef.current.value = '';
       }
     },
-    [state.files, maxFiles, multiple, maxSize, validateFile, createPreview, generateUniqueId, clearFiles, onFilesChange, onFilesAdded],
+    [
+      state.files,
+      maxFiles,
+      multiple,
+      maxSize,
+      sessionId,
+      validateFile,
+      createPreview,
+      generateUniqueId,
+      clearFiles,
+      onFilesChange,
+      onFilesAdded,
+    ],
   );
 
   const removeFile = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setState((prev) => {
         const fileToRemove = prev.files.find((file) => file.id === id);
-        if (fileToRemove && fileToRemove.preview && fileToRemove.file instanceof File && fileToRemove.file.type.startsWith('image/')) {
+
+        // Clean up preview URL if it exists
+        if (fileToRemove?.preview && fileToRemove.file instanceof File && fileToRemove.file.type.startsWith('image/')) {
           URL.revokeObjectURL(fileToRemove.preview);
         }
 
+        // Remove file from state immediately
         const newFiles = prev.files.filter((file) => file.id !== id);
         onFilesChange?.(newFiles);
 
         return {
           ...prev,
           files: newFiles,
-          errors: [],
         };
       });
-    },
-    [onFilesChange],
-  );
 
-  const clearErrors = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      errors: [],
-    }));
-  }, []);
+      // Find the file to remove to check if it has a storage ID
+      const fileToRemove = state.files.find((file) => file.id === id);
+
+      // If the file was uploaded (has a storage ID), delete it from storage
+      if (fileToRemove?.storageId) {
+        try {
+          await deleteAttachment({ storageId: fileToRemove.storageId });
+        } catch (error) {
+          // If deletion fails, add an error message but don't restore the file
+          toast.error(`Failed to delete file "${fileToRemove.file.name}" from storage.`);
+        }
+      }
+    },
+    [state.files, onFilesChange, deleteAttachment],
+  );
 
   const handleDragEnter = useCallback((e: DragEvent<HTMLElement>) => {
     e.preventDefault();
@@ -345,7 +430,6 @@ export function useFileUpload(options: FileUploadOptions = {}): [FileUploadState
       addFiles,
       removeFile,
       clearFiles,
-      clearErrors,
       handleDragEnter,
       handleDragLeave,
       handleDragOver,

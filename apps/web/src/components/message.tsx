@@ -44,6 +44,8 @@ function UserMessage({ message, onRetry }: { message: Doc<'messages'>; onRetry: 
         <div className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0">
           <Markdown>{sanitizeText(message.content)}</Markdown>
         </div>
+
+        <MessageFiles files={message.files ?? []} />
       </div>
       <div className="absolute right-0 mt-5 flex items-center gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus:opacity-100">
         <Retry onRetry={onRetry} variant="ghost" />

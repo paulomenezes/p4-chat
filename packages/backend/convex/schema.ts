@@ -60,4 +60,13 @@ export default defineSchema({
     chunksUri: v.string(),
     chunksTitle: v.string(),
   }).index('by_messageId', ['messageId']),
+  attachments: defineTable({
+    userId: v.id('users'),
+    storageId: v.id('_storage'),
+    name: v.string(),
+    size: v.number(),
+    type: v.string(),
+  })
+    .index('by_userId', ['userId'])
+    .index('by_storageId', ['storageId']),
 });

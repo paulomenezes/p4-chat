@@ -31,6 +31,7 @@ export const sendMessage = mutationWithSession({
     prompt: v.string(),
     threadId: v.optional(v.id('threads')),
     isSearching: v.boolean(),
+    files: v.optional(v.array(v.id('_storage'))),
   },
   handler: async (ctx, args) => {
     const userId = ctx.userId;
@@ -79,6 +80,7 @@ export const sendMessage = mutationWithSession({
       responseStreamId,
       model,
       isSearching: args.isSearching,
+      files: args.files,
     });
 
     return { threadId, messageId };
@@ -174,6 +176,7 @@ export const getHistory = internalQuery({
             : undefined,
           model: userMessage.model,
           isSearching: userMessage.isSearching,
+          files: userMessage.files,
         };
       }),
     );
@@ -184,6 +187,7 @@ export const getHistory = internalQuery({
         content: joined.userMessage.content,
         model: joined.model,
         isSearching: joined.isSearching,
+        files: joined.files,
       };
 
       // If the assistant message is empty, its probably because we have not
@@ -197,6 +201,7 @@ export const getHistory = internalQuery({
         content: joined.responseMessage.text,
         model: joined.model,
         isSearching: joined.isSearching,
+        files: joined.files,
       };
 
       return [user, assistant];

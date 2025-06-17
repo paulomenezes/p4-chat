@@ -8,6 +8,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { LoadingImage } from './loading';
+import { FileItem } from './file-item';
 
 export function MessageFiles({ files }: { files: Id<'_storage'>[] }) {
   if (files.length === 0) {
@@ -24,55 +25,74 @@ export function MessageFiles({ files }: { files: Id<'_storage'>[] }) {
 }
 
 function MessageFile({ file }: { file: Id<'_storage'> }) {
-  const url = useQuery(api.files.getImageUrl, { storageId: file });
+  const url = useQuery(api.files.getFileUrl, { storageId: file });
   const [failed, setFailed] = useState(false);
 
+  const isImage = url?.metadata?.contentType?.startsWith('image/');
+
   const download = useCallback(() => {
-    if (!url) {
+    if (!url?.url) {
       return;
     }
 
-    fetch(url)
+    fetch(url.url)
       .then((res) => res.blob())
       .then((blob) => {
-        const url = URL.createObjectURL(blob);
+        const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `image.png`;
+        a.href = objectUrl;
+        a.download = isImage ? 'image.png' : 'file.pdf';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(objectUrl);
 
         toast.success('File downloaded successfully');
       })
       .catch(() => {
         toast.error('Failed to download file');
       });
-  }, [url]);
+  }, [url?.url]);
 
   const openInNewTab = useCallback(() => {
-    if (!url) {
+    if (!url?.url) {
       return;
     }
 
-    window.open(url, '_blank');
+    window.open(url.url, '_blank');
   }, [url]);
 
   return failed ? (
     <div className="text-red-500">Failed to load file</div>
-  ) : !url ? (
+  ) : !url?.url ? (
     <LoadingImage />
   ) : (
     <div className="flex flex-row gap-6 items-center">
       <Dialog>
-        <DialogTrigger asChild>
-          <Image src={url} alt="File" width={300} height={300} className="rounded-md cursor-pointer" onError={() => setFailed(true)} />
+        <DialogTrigger className="cursor-pointer">
+          {isImage ? (
+            <Image
+              src={url.url}
+              alt="File"
+              width={300}
+              height={300}
+              className="rounded-md cursor-pointer"
+              onError={() => setFailed(true)}
+            />
+          ) : (
+            <FileItem
+              isLoading={false}
+              isImage={isImage}
+              name={isImage ? 'image.png' : 'file.pdf'}
+              size={url.metadata?.size ?? 0}
+              preview={url.url}
+            />
+          )}
         </DialogTrigger>
-        <DialogContent className="w-full max-w-4xl max-h-[90vh]" showCloseButton={false}>
+        <DialogContent className="w-full !max-w-4xl max-h-[90vh]" showCloseButton={false}>
           <DialogHeader>
             <div className="flex flex-row justify-between items-center">
-              <DialogTitle>image.png</DialogTitle>
+              <DialogTitle>{isImage ? 'image.png' : 'file.pdf'}</DialogTitle>
 
               <div className="flex flex-row gap-2">
                 <Button variant="secondary" size="icon" onClick={download}>
@@ -89,7 +109,11 @@ function MessageFile({ file }: { file: Id<'_storage'> }) {
               </div>
             </div>
           </DialogHeader>
-          <Image src={url} alt="File" width={600} height={600} className="max-h-[70vh] max-w-full rounded-md object-contain" />
+          {isImage ? (
+            <Image src={url.url} alt="File" width={900} height={900} className="max-h-[70vh] max-w-full rounded-md object-contain" />
+          ) : (
+            <iframe src={url.url} className="w-full h-[70vh] rounded-md" />
+          )}
         </DialogContent>
       </Dialog>
       <Button variant="secondary" size="icon" className="rounded-full" onClick={download}>

@@ -7,8 +7,9 @@ import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { Button } from './ui/button';
 import { Uploader } from './uploader';
-import { useFileUpload } from '@/hooks/use-file-upload';
 import { UploaderFileList } from './uploader-file-list';
+import type { InputHTMLAttributes } from 'react';
+import type { FileWithPreview } from '@/hooks/use-file-upload';
 
 export function ChatForm({
   input,
@@ -18,6 +19,10 @@ export function ChatForm({
   setIsSearching,
   handleInputChange,
   handleSubmit,
+  files,
+  removeFile,
+  getInputProps,
+  openFileDialog,
 }: {
   input: string;
   currentStreamId: string | undefined;
@@ -31,19 +36,14 @@ export function ChatForm({
     },
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
+  files: FileWithPreview[];
+  removeFile: (id: string) => void;
+  getInputProps: (props?: InputHTMLAttributes<HTMLInputElement>) => InputHTMLAttributes<HTMLInputElement> & {
+    ref: React.Ref<HTMLInputElement>;
+  };
+  openFileDialog: () => void;
 }) {
   const stopStreaming = useMutation(api.messages.stopStreaming);
-
-  const maxSizeMB = 5;
-  const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
-  const maxFiles = 6;
-
-  const [{ files }, { openFileDialog, removeFile, getInputProps }] = useFileUpload({
-    accept: 'image/svg+xml,image/png,image/jpeg,image/jpg,image/gif,application/pdf,text/plain',
-    maxSize,
-    multiple: true,
-    maxFiles,
-  });
 
   return (
     <div>

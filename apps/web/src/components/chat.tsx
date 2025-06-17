@@ -15,8 +15,13 @@ import { useSessionId } from 'convex-helpers/react/sessions';
 import { setSessionIdCookie } from '@/actions/set-cookies';
 import type { SessionId } from 'convex-helpers/server/sessions';
 import { ModeToggle } from './mode-toggle';
+import { useFileUpload } from '@/hooks/use-file-upload';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
+
+const maxSizeMB = 5;
+const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
+const maxFiles = 2;
 
 export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'> | null; serverSessionId: SessionId | null }) {
   const [chatId, setChatId] = useQueryState('chat');
@@ -70,6 +75,14 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   const currentStreamId = useMemo(() => {
     return messages?.data?.find((message) => message.responseStreamId)?.responseStreamId;
   }, [messages]);
+
+  const [{ files }, { openFileDialog, removeFile, getInputProps, clearFiles }] = useFileUpload({
+    accept: 'image/svg+xml,image/png,image/jpeg,image/jpg,image/gif,application/pdf,text/plain',
+    maxSize,
+    multiple: true,
+    maxFiles,
+    sessionId,
+  });
 
   useEffect(() => {
     setShowNewChatMessages(!chatId);
@@ -156,6 +169,10 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                     setIsSearching={setIsSearching}
                     currentStreamId={currentStreamId}
                     inputRef={inputRef}
+                    files={files}
+                    removeFile={removeFile}
+                    getInputProps={getInputProps}
+                    openFileDialog={openFileDialog}
                     handleSubmit={async (e) => {
                       e?.preventDefault?.();
                       setShowNewChatMessages(false);
@@ -172,9 +189,11 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                         threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
                         sessionId,
                         isSearching,
+                        files: files.map((file) => file.storageId).filter((storageId) => storageId !== undefined),
                       });
 
                       setChatId(threadId);
+                      clearFiles();
 
                       setDrivenIds((prev) => {
                         prev.add(messageId);

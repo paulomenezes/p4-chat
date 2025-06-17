@@ -48,7 +48,7 @@ export const streamChat = httpAction(async (ctx, request) => {
           },
         });
 
-        const uploadUrl = await ctx.runMutation(internal.files.generateUploadUrl);
+        const uploadUrl = await ctx.runMutation(api.files.generateUploadUrl);
 
         const file = new File([image.uint8Array], 'image.png', { type: image.mimeType });
 
@@ -59,20 +59,31 @@ export const streamChat = httpAction(async (ctx, request) => {
         });
 
         const { storageId } = await result.json();
+        const size = image.uint8Array.length;
 
-        await ctx.runMutation(internal.messages.updateMessage, {
-          streamId,
-          content: '',
-          model,
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-          durationSeconds: 0,
-          tokensPerSecond: 0,
-          reasoning: undefined,
-          searchMetadata: undefined,
-          files: [storageId],
-        });
+        await Promise.all([
+          ctx.runMutation(internal.messages.updateMessage, {
+            streamId,
+            content: '',
+            model,
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            durationSeconds: 0,
+            tokensPerSecond: 0,
+            reasoning: undefined,
+            searchMetadata: undefined,
+            files: [storageId],
+          }),
+          sessionId &&
+            ctx.runMutation(api.files.addAttachment, {
+              storageId,
+              name: 'image.png',
+              size,
+              type: image.mimeType,
+              sessionId,
+            }),
+        ]);
       } catch (error) {
         console.error('Error getting file', error);
       }
@@ -83,10 +94,54 @@ export const streamChat = httpAction(async (ctx, request) => {
               useSearchGrounding: true,
             })
           : openrouter(isSearching ? `${model}:online` : model),
-        messages: history.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+        messages: [
+          ...(await Promise.all([
+            ...history.map(async (message) => {
+              const files = message.files ?? [];
+              const filesUrls = await ctx.runQuery(api.files.getFilesUrls, { storageIds: files });
+
+              if (filesUrls.length > 0 && message.role === 'user') {
+                return {
+                  role: 'user' as const,
+                  content: [
+                    {
+                      type: 'text' as const,
+                      text: message.content,
+                    },
+                    ...filesUrls
+                      .map((url) => {
+                        if (!url.url || !url.metadata) {
+                          return undefined;
+                        }
+
+                        const isImage = url.metadata.contentType?.startsWith('image/');
+
+                        if (isImage) {
+                          return {
+                            type: 'image' as const,
+                            image: new URL(url.url),
+                            mimeType: url.metadata.contentType ?? 'application/octet-stream',
+                          };
+                        }
+
+                        return {
+                          type: 'file' as const,
+                          data: new URL(url.url),
+                          mimeType: url.metadata.contentType ?? 'application/octet-stream',
+                        };
+                      })
+                      .filter((part) => part !== undefined),
+                  ],
+                };
+              }
+
+              return {
+                role: message.role,
+                content: message.content,
+              };
+            }),
+          ])),
+        ],
         onFinish: async (message) => {
           const endTime = Date.now();
           const durationSeconds = (endTime - startTime) / 1000;
