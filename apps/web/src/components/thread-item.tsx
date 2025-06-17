@@ -1,4 +1,4 @@
-import { PinIcon, PinOffIcon, SplitIcon, XIcon, EditIcon, DownloadIcon } from 'lucide-react';
+import { PinIcon, PinOffIcon, SplitIcon, XIcon, EditIcon, DownloadIcon, ShareIcon } from 'lucide-react';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ import { useQueryState } from 'nuqs';
 import { cn } from '@/lib/utils';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from './ui/context-menu';
+import { ShareThreadModal } from './share-thread-modal';
 
 export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
   const [chatId, setChatId] = useQueryState('chat');
@@ -28,6 +29,7 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
   const [value, setValue] = useState(thread.title);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isOpenShareModal, setIsOpenShareModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const togglePin = useMutation(api.threads.togglePin);
@@ -250,6 +252,10 @@ ${msg.content}
             <DownloadIcon className="mr-2 size-4" />
             {isExporting ? 'Exporting...' : 'Export'}
           </ContextMenuItem>
+          <ContextMenuItem onClick={() => setIsOpenShareModal(true)}>
+            <ShareIcon className="mr-2 size-4" />
+            Share
+          </ContextMenuItem>
           <ContextMenuItem onClick={() => setIsOpenDeleteDialog(true)} className="text-destructive focus:text-destructive">
             <XIcon className="mr-2 size-4" />
             Delete
@@ -272,6 +278,8 @@ ${msg.content}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShareThreadModal thread={thread} isOpen={isOpenShareModal} onOpenChange={setIsOpenShareModal} />
     </>
   );
 }

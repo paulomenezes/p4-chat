@@ -30,6 +30,12 @@ export default defineSchema({
     parentThreadId: v.optional(v.id('threads')),
     model: v.optional(v.string()),
   }).index('by_userId', ['userId']),
+  threadShares: defineTable({
+    threadId: v.id('threads'),
+    userId: v.id('users'),
+    email: v.string(),
+    message: v.string(),
+  }).index('by_threadId', ['threadId']),
   messages: defineTable({
     threadId: v.id('threads'),
     role: v.union(v.literal('user'), v.literal('assistant')),

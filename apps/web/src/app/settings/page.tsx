@@ -40,7 +40,7 @@ export default async function SettingsPage() {
         <SettingsHeader />
 
         <div className="flex flex-grow flex-col gap-4 md:flex-row">
-          <div className="hidden space-y-8 md:block md:w-1/4">
+          <div className="hidden space-y-8 md:block md:w-1/4 shrink-0">
             <div className="relative text-center">
               {user?.image && (
                 <Image

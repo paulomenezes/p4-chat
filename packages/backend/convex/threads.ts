@@ -3,8 +3,13 @@ import { internalAction, internalMutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
-import { internal } from './_generated/api';
+import { components, internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
+import { Resend } from '@convex-dev/resend';
+
+export const resend: Resend = new Resend(components.resend, {
+  testMode: false,
+});
 
 export const getByUserIdOrSessionId = queryWithSession({
   args: {},
@@ -279,5 +284,83 @@ export const getThreadForExport = queryWithSession({
       thread,
       messages: sortedMessages,
     };
+  },
+});
+
+export const share = mutationWithSession({
+  args: {
+    threadId: v.id('threads'),
+    emails: v.array(v.string()),
+    message: v.string(),
+  },
+  handler: async (ctx, { threadId, emails, message }) => {
+    const userId = ctx.userId;
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const thread = await ctx.db.get(threadId);
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    if (thread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const existingShares = await ctx.db
+      .query('threadShares')
+      .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
+      .collect();
+
+    const newShares = emails.filter((email) => !existingShares.some((share) => share.email === email));
+
+    await Promise.all(
+      newShares.map((email) =>
+        ctx.db.insert('threadShares', {
+          threadId,
+          userId,
+          email,
+          message,
+        }),
+      ),
+    );
+
+    const baseUrl = 'http://localhost:3001';
+
+    await Promise.all(
+      newShares.map((email) =>
+        resend.sendEmail(
+          ctx,
+          `Acme <onboarding@resend.dev>`,
+          email,
+          `You are invited to view a thread on P4 Chat`,
+          `You are invited to view a thread on P4 Chat. Click the link below to view the thread: ${baseUrl}/?chat=${threadId}`,
+        ),
+      ),
+    );
+  },
+});
+
+export const getShares = queryWithSession({
+  args: {
+    threadId: v.id('threads'),
+  },
+  handler: async (ctx, { threadId }) => {
+    return await ctx.db
+      .query('threadShares')
+      .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
+      .collect();
+  },
+});
+
+export const removeShare = mutationWithSession({
+  args: {
+    id: v.id('threadShares'),
+  },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.delete(id);
   },
 });
