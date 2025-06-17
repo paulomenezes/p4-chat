@@ -1,5 +1,5 @@
 import { cn, getModelNameFromId, isImageGenerationModel, sanitizeText } from '@/lib/utils';
-import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
+import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
 import { SquarePenIcon } from 'lucide-react';
 import { Markdown } from './markdown';
 import { CopyImageToClipboard, CopyToClipboard } from './copy-to-clipboard';
@@ -11,20 +11,25 @@ import { MessageSearch } from './message-search';
 import { MessageStats, MessageStatsMobile } from './message-stats';
 import { MessageFiles } from './message-files';
 import { MessageAIContent } from './message-ai-content';
+import { MessageEdit } from './message-edit';
+import { Button } from './ui/button';
+import { useCallback, useState } from 'react';
 
 export function Message({
   message,
   sessionId,
   onRetry,
+  onEdit,
 }: {
   message: Doc<'messages'>;
   sessionId: SessionId | undefined;
   onRetry: (modelId: string | undefined) => void;
+  onEdit: (content: string, files: Id<'_storage'>[]) => void;
 }) {
   return (
     <div data-message-id={message._id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
       {message.role === 'user' ? (
-        <UserMessage message={message} onRetry={onRetry} />
+        <UserMessage message={message} onRetry={onRetry} onEdit={onEdit} />
       ) : (
         <AssistantMessage message={message} sessionId={sessionId} onRetry={onRetry} />
       )}
@@ -32,7 +37,33 @@ export function Message({
   );
 }
 
-function UserMessage({ message, onRetry }: { message: Doc<'messages'>; onRetry: (modelId: string | undefined) => void }) {
+function UserMessage({
+  message,
+  onRetry,
+  onEdit,
+}: {
+  message: Doc<'messages'>;
+  onRetry: (modelId: string | undefined) => void;
+  onEdit: (content: string, files: Id<'_storage'>[]) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleSave = useCallback(
+    (content: string, files: Id<'_storage'>[]) => {
+      onEdit(content, files);
+      setIsEditing(false);
+    },
+    [onEdit],
+  );
+
+  const handleEdit = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    setIsEditing(false);
+  }, []);
+
   return (
     <div
       role="article"
@@ -41,24 +72,27 @@ function UserMessage({ message, onRetry }: { message: Doc<'messages'>; onRetry: 
     >
       <span className="sr-only">Your message: </span>
       <div className="flex flex-col gap-3">
-        <div className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0">
-          <Markdown>{sanitizeText(message.content)}</Markdown>
+        {isEditing ? (
+          <MessageEdit message={message} onSave={handleSave} onCancel={handleCancel} isEditing={isEditing} />
+        ) : (
+          <>
+            <div className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0">
+              <Markdown>{sanitizeText(message.content)}</Markdown>
+            </div>
+            <MessageFiles files={message.files ?? []} />
+          </>
+        )}
+      </div>
+      {!isEditing && (
+        <div className="absolute right-0 mt-5 flex items-center gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus:opacity-100">
+          <Retry onRetry={onRetry} variant="ghost" />
+          <Button variant="ghost" size="icon" aria-label="Edit message" onClick={handleEdit}>
+            <SquarePenIcon className="size-4" />
+            <span className="sr-only">Edit</span>
+          </Button>
+          <CopyToClipboard content={message.content} variant="ghost" />
         </div>
-
-        <MessageFiles files={message.files ?? []} />
-      </div>
-      <div className="absolute right-0 mt-5 flex items-center gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus:opacity-100">
-        <Retry onRetry={onRetry} variant="ghost" />
-        <button
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 text-xs h-8 w-8 rounded-lg p-0"
-          aria-label="Edit message"
-          data-state="closed"
-        >
-          <SquarePenIcon className="size-4" />
-          <span className="sr-only">Edit</span>
-        </button>
-        <CopyToClipboard content={message.content} variant="ghost" />
-      </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { internalMutation, internalQuery, mutation, query } from './_generated/s
 import { v } from 'convex/values';
 import { streamingComponent } from './streaming';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
-import { internal } from './_generated/api';
+import { api, internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
 import { MODELS } from '../models';
 import { type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
@@ -148,6 +148,64 @@ export const retryMessage = mutationWithSession({
     ]);
 
     return { threadId, messageId: previousMessage._id };
+  },
+});
+
+export const editMessage = mutationWithSession({
+  args: {
+    messageId: v.id('messages'),
+    content: v.string(),
+    files: v.optional(v.array(v.id('_storage'))),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.userId;
+
+    const message = await ctx.db.get(args.messageId);
+
+    if (!message) {
+      throw new Error('Message not found');
+    }
+
+    if (message.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    if (message.role !== 'user') {
+      throw new Error('Can only edit user messages');
+    }
+
+    const responseStreamId = await streamingComponent.createStream(ctx);
+
+    const threadId = message.threadId;
+
+    // Get all messages in the thread
+    const allMessages = await ctx.db
+      .query('messages')
+      .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
+      .collect();
+
+    // Sort by _creationTime to get chronological order
+    const sortedMessages = allMessages.sort((a, b) => (a._creationTime < b._creationTime ? -1 : 1));
+
+    // Find index of current message
+    const currentIndex = sortedMessages.findIndex((m) => m._id === args.messageId);
+
+    // Messages to delete are all messages after the current one
+    const messagesToDelete = sortedMessages.slice(currentIndex + 1);
+
+    const deletedFiles = message.files?.filter((file) => !args.files?.includes(file));
+
+    // Update the message content and delete all subsequent messages
+    await Promise.all([
+      ctx.db.patch(message._id, { content: args.content, responseStreamId, files: args.files }),
+      ...messagesToDelete.map((msg) => ctx.db.delete(msg._id)),
+    ]);
+
+    if (deletedFiles) {
+      await Promise.all(deletedFiles.map((file) => ctx.runMutation(api.files.deleteById, { storageId: file })));
+    }
+
+    return { threadId, messageId: message._id };
   },
 });
 

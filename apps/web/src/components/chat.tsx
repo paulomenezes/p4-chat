@@ -40,6 +40,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   );
   const sendMessage = useMutation(api.messages.sendMessage);
   const retryMessage = useMutation(api.messages.retryMessage);
+  const editMessage = useMutation(api.messages.editMessage);
   const [inputValue, setInputValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isIntersecting, setIntersecting] = useState(false);
@@ -300,6 +301,27 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                           messageId: message._id,
                           sessionId,
                           modelId,
+                        });
+
+                        setChatId(threadId);
+
+                        setDrivenIds((prev) => {
+                          prev.add(messageId);
+                          return prev;
+                        });
+                      }}
+                      onEdit={async (content: string, files: Id<'_storage'>[]) => {
+                        if (!sessionId) {
+                          return;
+                        }
+
+                        setSessionIdCookie(sessionId);
+
+                        const { threadId, messageId } = await editMessage({
+                          messageId: message._id,
+                          sessionId,
+                          content,
+                          files,
                         });
 
                         setChatId(threadId);

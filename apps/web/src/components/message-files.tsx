@@ -10,7 +10,15 @@ import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTr
 import { LoadingImage } from './loading';
 import { FileItem } from './file-item';
 
-export function MessageFiles({ files }: { files: Id<'_storage'>[] }) {
+export function MessageFiles({
+  files,
+  isEditing,
+  onRemove,
+}: {
+  files: Id<'_storage'>[];
+  isEditing?: boolean;
+  onRemove?: (file: Id<'_storage'>) => void;
+}) {
   if (files.length === 0) {
     return null;
   }
@@ -18,13 +26,21 @@ export function MessageFiles({ files }: { files: Id<'_storage'>[] }) {
   return (
     <div>
       {files.map((file) => (
-        <MessageFile key={file} file={file} />
+        <MessageFile key={file} file={file} isEditing={isEditing} onRemove={onRemove} />
       ))}
     </div>
   );
 }
 
-function MessageFile({ file }: { file: Id<'_storage'> }) {
+function MessageFile({
+  file,
+  isEditing,
+  onRemove,
+}: {
+  file: Id<'_storage'>;
+  isEditing?: boolean;
+  onRemove?: (file: Id<'_storage'>) => void;
+}) {
   const url = useQuery(api.files.getFileUrl, { storageId: file });
   const [failed, setFailed] = useState(false);
 
@@ -116,9 +132,15 @@ function MessageFile({ file }: { file: Id<'_storage'> }) {
           )}
         </DialogContent>
       </Dialog>
-      <Button variant="secondary" size="icon" className="rounded-full" onClick={download}>
-        <DownloadIcon className="size-4" /> <span className="sr-only">Download</span>
-      </Button>
+      {isEditing ? (
+        <Button variant="secondary" size="icon" className="rounded-full" onClick={() => onRemove?.(file)}>
+          <XIcon className="size-4" /> <span className="sr-only">Remove</span>
+        </Button>
+      ) : (
+        <Button variant="secondary" size="icon" className="rounded-full" onClick={download}>
+          <DownloadIcon className="size-4" /> <span className="sr-only">Download</span>
+        </Button>
+      )}
     </div>
   );
 }
