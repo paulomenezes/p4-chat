@@ -1,13 +1,13 @@
 import { httpAction } from './_generated/server';
 import { api, internal } from './_generated/api';
 import { streamingComponent } from './streaming';
-import { streamText, experimental_generateImage as generateImage } from 'ai';
+import { streamText, experimental_generateImage as generateImage, LanguageModelV1 } from 'ai';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { MODELS } from '../models';
 import { type SessionId } from 'convex-helpers/server/sessions';
-import { google, type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
 
 export const streamChat = httpAction(async (ctx, request) => {
@@ -23,14 +23,11 @@ export const streamChat = httpAction(async (ctx, request) => {
   // we immediately return a streaming response to the client
   const response = await streamingComponent.stream(ctx, request, body.streamId as StreamId, async (ctx, request, streamId, append) => {
     // Lets grab the history up to now so that the AI has some context
-    const [history, userConfig] = await Promise.all([
+    const [history, userConfig, apiKey] = await Promise.all([
       ctx.runQuery(internal.messages.getHistory, { threadId: (threadId ?? undefined) as Id<'threads'> | undefined }),
       sessionId ? ctx.runQuery(api.user.getUserConfig, { sessionId }) : Promise.resolve(null),
+      sessionId ? ctx.runQuery(internal.keys.getApiKey) : Promise.resolve(null),
     ]);
-
-    const openrouter = createOpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
 
     const latestMessage = history?.[history.length - 1];
     const isSearching = latestMessage?.isSearching ?? false;
@@ -39,6 +36,15 @@ export const streamChat = httpAction(async (ctx, request) => {
     const model = latestMessage?.model ?? userConfig?.currentlySelectedModel ?? MODELS[0].id;
 
     if (model === 'openai/gpt-image-1') {
+      if (!apiKey?.openaiKey) {
+        await ctx.runMutation(internal.messages.stopStreamingWithError, {
+          streamId,
+          error: 'OpenAI API key is not set',
+        });
+
+        return;
+      }
+
       try {
         const { image } = await generateImage({
           model: openai.image('gpt-image-1'),
@@ -88,12 +94,44 @@ export const streamChat = httpAction(async (ctx, request) => {
         console.error('Error getting file', error);
       }
     } else {
+      let provider: LanguageModelV1;
+
+      if (isSearching) {
+        if (!apiKey?.googleKey) {
+          await ctx.runMutation(internal.messages.stopStreamingWithError, {
+            streamId,
+            error: 'Google API key is not set',
+          });
+
+          return;
+        }
+
+        const google = createGoogleGenerativeAI({
+          apiKey: apiKey.googleKey,
+        });
+
+        provider = google('gemini-2.0-flash', {
+          useSearchGrounding: true,
+        });
+      } else {
+        if (!apiKey?.openRouterKey) {
+          await ctx.runMutation(internal.messages.stopStreamingWithError, {
+            streamId,
+            error: 'OpenRouter API key is not set',
+          });
+
+          return;
+        }
+
+        const openrouter = createOpenRouter({
+          apiKey: apiKey.openRouterKey,
+        });
+
+        provider = openrouter(model);
+      }
+
       const { fullStream, providerMetadata } = streamText({
-        model: isSearching
-          ? google('gemini-2.0-flash', {
-              useSearchGrounding: true,
-            })
-          : openrouter(isSearching ? `${model}:online` : model),
+        model: provider,
         messages: [
           ...(await Promise.all([
             ...history.map(async (message) => {

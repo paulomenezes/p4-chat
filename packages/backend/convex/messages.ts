@@ -395,6 +395,44 @@ export const stopStreaming = mutation({
   },
 });
 
+export const stopStreamingWithError = internalMutation({
+  args: {
+    streamId: v.string(),
+    error: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db
+      .query('messages')
+      .withIndex('by_streamId', (q) => q.eq('responseStreamId', args.streamId))
+      .first();
+
+    if (!message) {
+      throw new Error('Message not found');
+    }
+
+    const streamBody = await streamingComponent.getStreamBody(ctx, message.responseStreamId as StreamId);
+
+    await Promise.all([
+      ctx.db.patch(message._id, { responseStreamId: undefined }),
+      ctx.db.insert('messages', {
+        content: streamBody.text,
+        threadId: message.threadId,
+        role: 'assistant',
+        userId: message.userId,
+        model: message.model,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        durationSeconds: 0,
+        tokensPerSecond: 0,
+        reasoning: undefined,
+        stopped: true,
+        stoppedReason: args.error,
+      }),
+    ]);
+  },
+});
+
 export const getMessageSearchResults = query({
   args: {
     messageId: v.id('messages'),

@@ -5,7 +5,6 @@ import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useQuery } from 'convex-helpers/react/cache/hooks';
-import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
@@ -28,7 +27,6 @@ export function AppSidebar({
   serverThreads,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { serverUser: Doc<'users'> | null; serverThreads: Doc<'threads'>[] }) {
-  const { signOut } = useAuthActions();
   const [sessionId] = useSessionId();
   const user = useQuery(api.user.currentUser) ?? serverUser;
   const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
@@ -179,11 +177,11 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         {user ? (
-          <button
+          <Link
             aria-label="Go to settings"
             role="button"
             className="flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2 text-left"
-            onClick={() => signOut()}
+            href="/settings"
           >
             <div className="flex w-full min-w-0 flex-row items-center gap-3">
               <Image
@@ -199,7 +197,7 @@ export function AppSidebar({
                 <span className="text-xs">Pro</span>
               </div>
             </div>
-          </button>
+          </Link>
         ) : (
           <Link
             aria-label="Login"

@@ -44,6 +44,7 @@ export default defineSchema({
     tokensPerSecond: v.optional(v.number()),
     reasoning: v.optional(v.string()),
     stopped: v.optional(v.boolean()),
+    stoppedReason: v.optional(v.string()),
     isSearching: v.optional(v.boolean()),
     searchQueries: v.optional(v.array(v.string())),
     files: v.optional(v.array(v.id('_storage'))),
@@ -69,4 +70,13 @@ export default defineSchema({
   })
     .index('by_userId', ['userId'])
     .index('by_storageId', ['storageId']),
+  apiKeys: defineTable({
+    userId: v.id('users'),
+    openRouterKey: v.optional(v.string()),
+    openRouterDefined: v.optional(v.boolean()),
+    openaiKey: v.optional(v.string()),
+    openaiDefined: v.optional(v.boolean()),
+    googleKey: v.optional(v.string()),
+    googleDefined: v.optional(v.boolean()),
+  }).index('by_userId', ['userId']),
 });
