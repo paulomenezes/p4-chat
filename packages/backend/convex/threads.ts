@@ -111,6 +111,32 @@ export const togglePin = mutationWithSession({
   },
 });
 
+export const rename = mutationWithSession({
+  args: {
+    id: v.id('threads'),
+    title: v.string(),
+  },
+  handler: async (ctx, { id, title }) => {
+    const userId = ctx.userId;
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const thread = await ctx.db.get(id);
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    if (thread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    return await ctx.db.patch(id, { title });
+  },
+});
+
 export const remove = mutationWithSession({
   args: {
     id: v.id('threads'),
@@ -217,5 +243,41 @@ export const branchOff = mutationWithSession({
     }
 
     return newThreadId;
+  },
+});
+
+export const getThreadForExport = queryWithSession({
+  args: {
+    threadId: v.id('threads'),
+  },
+  handler: async (ctx, { threadId }) => {
+    const userId = ctx.userId;
+
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const thread = await ctx.db.get(threadId);
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    if (thread.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const messages = await ctx.db
+      .query('messages')
+      .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
+      .collect();
+
+    // Sort messages by creation time
+    const sortedMessages = messages.sort((a, b) => (a._creationTime < b._creationTime ? -1 : 1));
+
+    return {
+      thread,
+      messages: sortedMessages,
+    };
   },
 });
