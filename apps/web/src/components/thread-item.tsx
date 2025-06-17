@@ -252,7 +252,7 @@ ${msg.content}
             <DownloadIcon className="mr-2 size-4" />
             {isExporting ? 'Exporting...' : 'Export'}
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => setIsOpenShareModal(true)}>
+          <ContextMenuItem onClick={() => setIsOpenShareModal(true)} disabled>
             <ShareIcon className="mr-2 size-4" />
             Share
           </ContextMenuItem>

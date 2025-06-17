@@ -1,7 +1,7 @@
 import { httpAction } from './_generated/server';
 import { api, internal } from './_generated/api';
 import { streamingComponent } from './streaming';
-import { streamText, experimental_generateImage as generateImage, LanguageModelV1 } from 'ai';
+import { streamText, experimental_generateImage as generateImage, type LanguageModelV1 } from 'ai';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';

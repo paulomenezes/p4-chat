@@ -6,6 +6,7 @@ import { google } from '@ai-sdk/google';
 import { components, internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
 import { Resend } from '@convex-dev/resend';
+import { inviteEmailTemplate } from '../email-template';
 
 export const resend: Resend = new Resend(components.resend, {
   testMode: false,
@@ -310,6 +311,8 @@ export const share = mutationWithSession({
       throw new Error('Unauthorized');
     }
 
+    const from = await ctx.db.get(userId);
+
     const existingShares = await ctx.db
       .query('threadShares')
       .withIndex('by_threadId', (q) => q.eq('threadId', threadId))
@@ -331,15 +334,26 @@ export const share = mutationWithSession({
     const baseUrl = 'http://localhost:3001';
 
     await Promise.all(
-      newShares.map((email) =>
-        resend.sendEmail(
+      newShares.map(async (email) => {
+        const to = await ctx.db
+          .query('users')
+          .withIndex('email', (q) => q.eq('email', email))
+          .first();
+
+        return resend.sendEmail(
           ctx,
           `Acme <onboarding@resend.dev>`,
           email,
           `You are invited to view a thread on P4 Chat`,
-          `You are invited to view a thread on P4 Chat. Click the link below to view the thread: ${baseUrl}/?chat=${threadId}`,
-        ),
-      ),
+          inviteEmailTemplate({
+            inviterName: from?.name ?? 'P4 Chat',
+            friendName: to?.name ?? email,
+            chatTitle: thread.title,
+            chatPreview: `${message.slice(0, 100)}...`,
+            shareUrl: `${baseUrl}/?chat=${threadId}`,
+          }),
+        );
+      }),
     );
   },
 });
