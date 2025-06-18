@@ -5,11 +5,11 @@ export function ModelFeatures({ model }: { model: (typeof MODELS)[number] }) {
   return (
     <div className="flex items-center gap-2">
       {model.supported_parameters.includes('reasoning') && <ModelFeature feature="reasoning" hideLabel />}
-      {model.architecture.input_modalities.includes('image') && <ModelFeature feature="vision" hideLabel />}
-      {model.architecture.input_modalities.includes('file') && <ModelFeature feature="pdfs" hideLabel />}
-      {model.description.includes('fast') && <ModelFeature feature="fast" hideLabel />}
-      {/* {model.description.includes('search') && <ModelFeature feature="search" hideLabel />} */}
-      {/* {model.description.includes('effortControl') && <ModelFeature feature="effortControl" hideLabel />} */}
+      {model.supported_parameters.includes('vision') && <ModelFeature feature="vision" hideLabel />}
+      {model.supported_parameters.includes('pdf') && <ModelFeature feature="pdfs" hideLabel />}
+      {model.supported_parameters.includes('fast') && <ModelFeature feature="fast" hideLabel />}
+      {model.supported_parameters.includes('search') && <ModelFeature feature="search" hideLabel />}
+      {model.supported_parameters.includes('image-generation') && <ModelFeature feature="image-generation" hideLabel />}
     </div>
   );
 }

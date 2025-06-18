@@ -21,7 +21,7 @@ import { ModelFeatures } from './model-features';
 import { ModelIcon } from './model-icon';
 import { Button } from './ui/button';
 
-export function ModelSelector() {
+export function ModelSelector({ currentModel, setCurrentModel }: { currentModel: string; setCurrentModel: (model: string) => void }) {
   const [sessionId] = useSessionId();
   const userConfig = useQueryWithStatus(api.user.getUserConfig, sessionId ? { sessionId } : 'skip');
   const updateCurrentlySelectedModel = useMutation(api.user.updateCurrentlySelectedModel).withOptimisticUpdate((localStore, args) => {
@@ -48,7 +48,7 @@ export function ModelSelector() {
   const [open, setOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
-  const selectedModel = getModelFromId(userConfig?.data?.currentlySelectedModel);
+  const selectedModel = getModelFromId(currentModel);
 
   const filteredModels =
     selectedFeatures.length === 0
@@ -57,21 +57,20 @@ export function ModelSelector() {
           let isMatch = false;
 
           for (const selectedFeature of selectedFeatures) {
-            if (selectedFeature === 'reasoning' && model.supported_parameters.includes('reasoning')) {
+            if (
+              (selectedFeature === 'reasoning' && model.supported_parameters.includes('reasoning')) ||
+              (selectedFeature === 'vision' && model.supported_parameters.includes('vision')) ||
+              (selectedFeature === 'pdfs' && model.supported_parameters.includes('pdf')) ||
+              (selectedFeature === 'fast' && model.supported_parameters.includes('fast')) ||
+              (selectedFeature === 'search' && model.supported_parameters.includes('search')) ||
+              // (selectedFeature === 'effortControl' && model.supported_parameters.includes('effort-control')) ||
+              (selectedFeature === 'image-generation' && model.supported_parameters.includes('image-generation'))
+            ) {
               isMatch = true;
             }
-            if (selectedFeature === 'vision' && model.architecture.input_modalities.includes('image')) {
-              isMatch = true;
-            }
-            if (selectedFeature === 'pdfs' && model.architecture.input_modalities.includes('file')) {
-              isMatch = true;
-            }
-            if (selectedFeature === 'fast' && model.description.includes('fast')) {
-              isMatch = true;
-            }
-
-            return isMatch;
           }
+
+          return isMatch;
         });
 
   return (
@@ -110,6 +109,7 @@ export function ModelSelector() {
                       });
                     }
 
+                    setCurrentModel(model.id);
                     setOpen(false);
                   }}
                 >
@@ -128,8 +128,9 @@ export function ModelSelector() {
             <div className="absolute inset-x-3 top-0 border-b border-chat-border"></div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" type="button">
+                <Button variant="ghost" size="icon" type="button" className="relative">
                   <FilterIcon className="size-4" />
+                  {selectedFeatures.length > 0 && <div className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500" />}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="right">

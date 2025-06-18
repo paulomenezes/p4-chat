@@ -96,6 +96,22 @@ export const streamChat = httpAction(async (ctx, request) => {
       let provider: LanguageModelV1;
 
       if (isSearching) {
+        const searchMapModel: Record<string, string> = {
+          'google/gemini-2.0-flash-001': 'gemini-2.0-flash',
+          'google/gemini-2.5-flash-preview-05-20': 'gemini-2.5-flash-preview-04-17',
+          'google/gemini-2.5-flash-preview:thinking': 'gemini-2.5-flash-preview-04-17',
+          'google/gemini-2.5-pro-preview': 'gemini-2.5-pro-preview-05-06',
+        } as const;
+
+        if (!searchMapModel[model]) {
+          await ctx.runMutation(internal.messages.stopStreamingWithError, {
+            streamId,
+            error: 'Model not supported for search grounding',
+          });
+
+          return;
+        }
+
         if (!apiKey?.googleKey) {
           // await ctx.runMutation(internal.messages.stopStreamingWithError, {
           //   streamId,
@@ -104,7 +120,7 @@ export const streamChat = httpAction(async (ctx, request) => {
 
           // return;
 
-          provider = google('gemini-2.0-flash', {
+          provider = google(searchMapModel[model], {
             useSearchGrounding: true,
           });
         } else {
@@ -112,7 +128,7 @@ export const streamChat = httpAction(async (ctx, request) => {
             apiKey: apiKey.googleKey,
           });
 
-          provider = google('gemini-2.0-flash', {
+          provider = google(searchMapModel[model], {
             useSearchGrounding: true,
           });
         }

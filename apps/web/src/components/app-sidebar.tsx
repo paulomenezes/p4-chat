@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useQuery } from 'convex-helpers/react/cache/hooks';
 import { api } from '@p4-chat/backend/convex/_generated/api';
@@ -32,6 +32,7 @@ export function AppSidebar({
   const user = useQuery(api.user.currentUser) ?? serverUser;
   const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
+  const { setOpenMobile } = useSidebar();
 
   const now = new Date();
   const today = startOfDay(now);
@@ -73,6 +74,7 @@ export function AppSidebar({
               className: 'w-full',
             })}
             href="/"
+            onClick={() => setOpenMobile(false)}
           >
             <span className="w-full select-none text-center">New Chat</span>
           </Link>
@@ -196,7 +198,7 @@ export function AppSidebar({
               />
               <div className="flex min-w-0 flex-col text-foreground">
                 <span className="truncate text-sm font-medium">{user.name}</span>
-                <span className="text-xs">Pro</span>
+                <span className="text-xs">Open Source</span>
               </div>
             </div>
           </Link>

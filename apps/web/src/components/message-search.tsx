@@ -49,16 +49,19 @@ export function MessageSearch({ message }: { message: Doc<'messages'> }) {
                                     {chunk.chunksTitle}
                                   </a>
                                 </div>
-                                <div
-                                  className={cn('shrink-0 rounded-full px-2 py-1', {
-                                    'bg-green-400/60 text-green-900 dark:bg-green-800/30 dark:text-green-400': chunk.confidenceScore > 0.8,
-                                    'bg-yellow-400/60 text-yellow-900 dark:bg-yellow-800/30 dark:text-yellow-400':
-                                      chunk.confidenceScore > 0.5 && chunk.confidenceScore <= 0.8,
-                                    'bg-red-400/60 text-red-900 dark:bg-red-800/30 dark:text-red-400': chunk.confidenceScore <= 0.5,
-                                  })}
-                                >
-                                  {(chunk.confidenceScore * 100).toFixed(0)}% Confidence
-                                </div>
+                                {chunk.confidenceScore && (
+                                  <div
+                                    className={cn('shrink-0 rounded-full px-2 py-1', {
+                                      'bg-green-400/60 text-green-900 dark:bg-green-800/30 dark:text-green-400':
+                                        chunk.confidenceScore > 0.8,
+                                      'bg-yellow-400/60 text-yellow-900 dark:bg-yellow-800/30 dark:text-yellow-400':
+                                        chunk.confidenceScore > 0.5 && chunk.confidenceScore <= 0.8,
+                                      'bg-red-400/60 text-red-900 dark:bg-red-800/30 dark:text-red-400': chunk.confidenceScore <= 0.5,
+                                    })}
+                                  >
+                                    {(chunk.confidenceScore * 100).toFixed(0)}% Confidence
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

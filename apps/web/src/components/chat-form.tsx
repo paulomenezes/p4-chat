@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import { Uploader } from './uploader';
 import { UploaderFileList } from './uploader-file-list';
 import { useFileUpload } from '@/hooks/use-file-upload';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
 import type { SessionId } from 'convex-helpers/server/sessions';
 import { setSessionIdCookie } from '@/actions/set-cookies';
@@ -16,6 +16,8 @@ import { useQueryState } from 'nuqs';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { createPortal } from 'react-dom';
 import { NewChatMessages } from './new-chat-messages';
+import { useQueryWithStatus } from '@/hooks/use-query';
+import { getModelFromId } from '@/lib/utils';
 
 const maxSizeMB = 2;
 const maxFiles = 2;
@@ -28,6 +30,7 @@ export function ChatForm({
   isSearching,
   serverUser,
   showNewChatMessages,
+  messages,
   setIsSearching,
   setIsEmpty,
   setShowNewChatMessages,
@@ -39,6 +42,7 @@ export function ChatForm({
   isSearching: boolean;
   serverUser: Doc<'users'> | null;
   showNewChatMessages: boolean;
+  messages: Doc<'messages'>[];
   setIsSearching: (isSearching: boolean) => void;
   setIsEmpty: (isEmpty: boolean) => void;
   setShowNewChatMessages: (showNewChatMessages: boolean) => void;
@@ -50,8 +54,16 @@ export function ChatForm({
   const [inputValue, setInputValue] = useState('');
   const stopStreaming = useMutation(api.messages.stopStreaming);
 
+  const userConfig = useQueryWithStatus(api.user.getUserConfig, sessionId ? { sessionId } : 'skip');
+  const selectedModel = getModelFromId(userConfig?.data?.currentlySelectedModel);
+
+  const [currentModel, setCurrentModel] = useState(selectedModel.id);
+
   const [{ files }, { openFileDialog, removeFile, getInputProps, clearFiles }] = useFileUpload({
-    accept: 'image/png,image/jpeg,image/jpg,application/pdf',
+    accept: [
+      ...(selectedModel.supported_parameters.includes('vision') ? ['image/png', 'image/jpeg', 'image/jpg'] : []),
+      ...(selectedModel.supported_parameters.includes('pdf') ? ['application/pdf'] : []),
+    ].join(','),
     maxSize,
     multiple: true,
     maxFiles,
@@ -125,7 +137,14 @@ export function ChatForm({
   });
 
   const hasSomeFileLoading = files.some((file) => file.isLoading);
-  const element = document.getElementById('new-chat-messages');
+  const element = typeof document !== 'undefined' ? document.getElementById('new-chat-messages') : null;
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      setCurrentModel(lastMessage.model ?? selectedModel.id);
+    }
+  }, [messages, selectedModel.id]);
 
   return (
     <div>
@@ -183,20 +202,24 @@ export function ChatForm({
 
             <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
               <div className="ml-[-7px] flex items-center gap-1">
-                <ModelSelector />
+                <ModelSelector currentModel={currentModel} setCurrentModel={setCurrentModel} />
 
-                <Button
-                  size="xs"
-                  type="button"
-                  className="rounded-full pl-2 pr-2.5 -mb-1.5"
-                  variant={isSearching ? 'default' : 'outline'}
-                  onClick={() => setIsSearching(!isSearching)}
-                >
-                  <GlobeIcon className="size-4 scale-x-[-1]" />
-                  <span className="max-sm:hidden">Search</span>
-                </Button>
+                {selectedModel.supported_parameters.includes('search') && (
+                  <Button
+                    size="xs"
+                    type="button"
+                    className="rounded-full pl-2 pr-2.5 -mb-1.5"
+                    variant={isSearching ? 'default' : 'outline'}
+                    onClick={() => setIsSearching(!isSearching)}
+                  >
+                    <GlobeIcon className="size-4 scale-x-[-1]" />
+                    <span className="max-sm:hidden">Search</span>
+                  </Button>
+                )}
 
-                <Uploader getInputProps={getInputProps} openFileDialog={openFileDialog} />
+                {(selectedModel.supported_parameters.includes('vision') || selectedModel.supported_parameters.includes('pdf')) && (
+                  <Uploader getInputProps={getInputProps} openFileDialog={openFileDialog} />
+                )}
               </div>
             </div>
           </div>

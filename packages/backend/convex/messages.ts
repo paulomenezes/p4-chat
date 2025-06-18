@@ -303,11 +303,11 @@ export const updateMessage = internalMutation({
         const groundingSupports = searchMetadata.groundingMetadata?.groundingSupports ?? [];
 
         for (const support of groundingSupports) {
-          for (let index = 0; index < (support.confidenceScores?.length ?? 0); index++) {
+          for (let index = 0; index < (support.groundingChunkIndices?.length ?? 0); index++) {
             const score = support.confidenceScores?.[index];
             const chunkIndex = support.groundingChunkIndices?.[index];
 
-            if (score === undefined || chunkIndex === undefined) {
+            if (chunkIndex === undefined) {
               continue;
             }
 
@@ -318,7 +318,7 @@ export const updateMessage = internalMutation({
                 startIndex: support.segment.startIndex ?? undefined,
                 endIndex: support.segment.endIndex ?? undefined,
                 text: support.segment.text ?? '',
-                confidenceScore: score,
+                confidenceScore: score || undefined,
                 chunksUri: chunk.web?.uri ?? '',
                 chunksTitle: chunk.web?.title ?? '',
               });
@@ -466,7 +466,7 @@ export const getMessageSearchResults = query({
           _id: Id<'messageSearchResults'>;
           text: string;
           chunks: Array<{
-            confidenceScore: number;
+            confidenceScore: number | undefined;
             chunksUri: string;
             chunksTitle: string;
           }>;

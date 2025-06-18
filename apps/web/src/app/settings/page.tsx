@@ -67,13 +67,6 @@ export default async function SettingsPage() {
               <span className="text-sm font-semibold">Keyboard Shortcuts</span>
               <div className="grid gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Search</span>
-                  <div className="flex gap-1">
-                    <kbd className="rounded bg-background px-2 py-1 font-sans text-sm">⌘</kbd>
-                    <kbd className="rounded bg-background px-2 py-1 font-sans text-sm">K</kbd>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">New Chat</span>
                   <div className="flex gap-1">
                     <kbd className="rounded bg-background px-2 py-1 font-sans text-sm">⌘</kbd>

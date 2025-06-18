@@ -16,11 +16,12 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
 import { cn } from '@/lib/utils';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 const MessageStream = dynamic(() => import('./message-stream'), { ssr: false });
 
 export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'> | null; serverSessionId: SessionId | null }) {
-  const [chatId] = useQueryState('chat');
+  const [chatId, setChatId] = useQueryState('chat');
   const [sessionId] = useSessionId() ?? [serverSessionId];
 
   const [isEmpty, setIsEmpty] = useState(true);
@@ -43,7 +44,16 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const { open } = useSidebar();
+  const { open, toggleSidebar } = useSidebar();
+  useHotkeys(
+    'meta+shift+o',
+    () => {
+      setChatId(null);
+      inputRef.current?.focus();
+    },
+    [setChatId],
+  );
+  useHotkeys('meta+b', () => toggleSidebar(), [toggleSidebar]);
 
   useEffect(() => {
     if (!messagesEndRef.current) {
@@ -129,6 +139,7 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
                     currentStreamId={currentStreamId}
                     inputRef={inputRef}
                     showNewChatMessages={showNewChatMessages}
+                    messages={messages?.data ?? []}
                     setIsSearching={setIsSearching}
                     setIsEmpty={setIsEmpty}
                     setShowNewChatMessages={setShowNewChatMessages}

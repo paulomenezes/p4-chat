@@ -1,4 +1,4 @@
-import { ZapIcon, EyeIcon, GlobeIcon, FileTextIcon, BrainIcon, Settings2Icon } from 'lucide-react';
+import { ZapIcon, EyeIcon, GlobeIcon, FileTextIcon, BrainIcon, ImageIcon } from 'lucide-react';
 
 export const MODEL_FEATURES = {
   fast: {
@@ -26,10 +26,10 @@ export const MODEL_FEATURES = {
     name: 'Reasoning',
     style: { '--color-dark': 'hsl(263 58% 75%)', '--color': 'hsl(263 58% 53%)' } as React.CSSProperties,
   },
-  effortControl: {
-    icon: Settings2Icon,
-    name: 'Effort Control',
-    style: { '--color-dark': 'hsl(304 44% 72%)', '--color': 'hsl(304 44% 51%)' } as React.CSSProperties,
+  'image-generation': {
+    icon: ImageIcon,
+    name: 'Image Generation',
+    style: { '--color-dark': 'hsl(208 56% 74%)', '--color': 'hsl(208 56% 52%)' } as React.CSSProperties,
   },
 };
 
