@@ -1,6 +1,7 @@
 'use client';
 
 import { api } from '@p4-chat/backend/convex/_generated/api';
+import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { CodeIcon, GraduationCapIcon, NewspaperIcon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -40,8 +41,14 @@ const categoriesIcons = {
   Learn: GraduationCapIcon,
 };
 
-export function NewChatMessages({ onSelectMessage }: { onSelectMessage: (message: string) => void }) {
-  const user = useQuery(api.user.currentUser);
+export function NewChatMessages({
+  serverUser,
+  onSelectMessage,
+}: {
+  serverUser: Doc<'users'> | null;
+  onSelectMessage: (message: string) => void;
+}) {
+  const user = useQuery(api.user.currentUser) ?? serverUser;
   const [selectedCategory, setSelectedCategory] = useState<string>('default');
 
   return (

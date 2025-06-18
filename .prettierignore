@@ -1,3 +1,4 @@
 node_modules
 .next
 .turbo
+packages/backend/convex/_generated

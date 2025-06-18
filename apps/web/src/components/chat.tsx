@@ -1,52 +1,95 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChatForm } from '@/components/chat-form';
 import { Message } from '@/components/message';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
-import { useWindowSize } from '@/hooks/use-window-size';
 import { useQueryState } from 'nuqs';
 import dynamic from 'next/dynamic';
 import { NewChatMessages } from './new-chat-messages';
-import { MoonIcon, Settings2Icon } from 'lucide-react';
+import { ChevronDownIcon, Settings2Icon } from 'lucide-react';
+import { useQueryWithStatus } from '@/hooks/use-query';
+import { useSessionId } from 'convex-helpers/react/sessions';
+import { setSessionIdCookie } from '@/actions/set-cookies';
+import type { SessionId } from 'convex-helpers/server/sessions';
+import { ModeToggle } from './mode-toggle';
+import { useFileUpload } from '@/hooks/use-file-upload';
+import Link from 'next/link';
+import { Button } from './ui/button';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
-export function Chat() {
-  const [chatId, setChatId] = useQueryState('chat');
+const maxSizeMB = 5;
+const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
+const maxFiles = 2;
 
+export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'> | null; serverSessionId: SessionId | null }) {
+  const [chatId, setChatId] = useQueryState('chat');
+  const [sessionId] = useSessionId() ?? [serverSessionId];
+
+  const [showNewChatMessages, setShowNewChatMessages] = useState(!chatId);
   const [drivenIds, setDrivenIds] = useState<Set<string>>(new Set());
-  const [isStreaming, setIsStreaming] = useState(false);
-  const messages = useQuery(api.messages.listMessages, { threadId: (chatId ?? undefined) as Id<'threads'> | undefined });
+  const messages = useQueryWithStatus(
+    api.messages.listMessages,
+    sessionId && chatId
+      ? {
+          sessionId,
+          threadId: chatId as Id<'threads'>,
+        }
+      : 'skip',
+  );
+  const sendMessage = useMutation(api.messages.sendMessage);
+  const retryMessage = useMutation(api.messages.retryMessage);
+  const editMessage = useMutation(api.messages.editMessage);
   const [inputValue, setInputValue] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [isIntersecting, setIntersecting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const focusInput = useCallback(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = 'smooth') => {
-      // if (messagesEndRef.current) {
-      //   messagesEndRef.current.scrollIntoView({ behavior });
-      // }
-    },
-    [messagesEndRef],
-  );
-
-  const windowSize = useWindowSize();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [windowSize, scrollToBottom]);
+    if (!messagesEndRef.current) {
+      return;
+    }
 
-  const sendMessage = useMutation(api.messages.sendMessage);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        setIntersecting(entry.isIntersecting);
+      });
+    });
 
-  if (!messages) return null;
+    observer.observe(messagesEndRef.current);
+
+    return () => observer.disconnect();
+  }, [messagesEndRef, chatId]);
+
+  const scrollToBottom = useCallback(() => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTo({
+        top: messageContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, []);
+
+  const currentStreamId = useMemo(() => {
+    return messages?.data?.find((message) => message.responseStreamId)?.responseStreamId;
+  }, [messages]);
+
+  const [{ files }, { openFileDialog, removeFile, getInputProps, clearFiles }] = useFileUpload({
+    accept: 'image/svg+xml,image/png,image/jpeg,image/jpg,image/gif,application/pdf,text/plain',
+    maxSize,
+    multiple: true,
+    maxFiles,
+    sessionId,
+  });
+
+  useEffect(() => {
+    setShowNewChatMessages(!chatId);
+  }, [chatId]);
 
   return (
     <div className="firefox-scrollbar-margin-fix min-h-pwa relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
@@ -97,6 +140,17 @@ export function Chat() {
         </div>
         <div className="pointer-events-none absolute bottom-0 z-10 w-full px-2">
           <div className="relative mx-auto flex w-full max-w-3xl flex-col text-center">
+            <div className="flex justify-center pb-4">
+              {!isIntersecting && !!messages?.data?.length && (
+                <button
+                  className="justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:hover:bg-secondary/50 h-8 px-3 text-xs pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-(--chat-overlay) text-secondary-foreground/70 backdrop-blur-xl hover:bg-secondary"
+                  onClick={scrollToBottom}
+                >
+                  <span className="pb-0.5">Scroll to bottom</span>
+                  <ChevronDownIcon className="size-4 -mr-1" />
+                </button>
+              )}
+            </div>
             <div className="pointer-events-none">
               <div className="pointer-events-auto mx-auto w-fit"></div>
               <div className="pointer-events-auto">
@@ -114,26 +168,42 @@ export function Chat() {
                   <ChatForm
                     input={inputValue}
                     handleInputChange={(event) => setInputValue(event.target.value)}
+                    isSearching={isSearching}
+                    setIsSearching={setIsSearching}
+                    currentStreamId={currentStreamId}
+                    inputRef={inputRef}
+                    files={files}
+                    removeFile={removeFile}
+                    getInputProps={getInputProps}
+                    openFileDialog={openFileDialog}
                     handleSubmit={async (e) => {
                       e?.preventDefault?.();
+                      setShowNewChatMessages(false);
 
-                      if (!inputValue.trim()) return;
+                      if (!inputValue.trim() || !sessionId) {
+                        return;
+                      }
 
                       setInputValue('');
+                      setSessionIdCookie(sessionId);
 
                       const { threadId, messageId } = await sendMessage({
                         prompt: inputValue,
                         threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
+                        sessionId,
+                        isSearching,
+                        files: files.map((file) => file.storageId).filter((storageId) => storageId !== undefined),
                       });
 
                       setChatId(threadId);
+                      clearFiles();
 
                       setDrivenIds((prev) => {
                         prev.add(messageId);
                         return prev;
                       });
 
-                      setIsStreaming(true);
+                      inputRef.current?.focus();
                     }}
                   />
                 </div>
@@ -147,6 +217,7 @@ export function Chat() {
             paddingBottom: '144px',
             scrollbarGutter: 'stable both-edges',
           }}
+          ref={messageContainerRef}
         >
           <div className="fixed right-0 top-0 z-20 h-16 w-28 max-sm:hidden">
             <div
@@ -191,18 +262,13 @@ export function Chat() {
           </div>
           <div className="fixed right-2 top-2 z-20 max-sm:hidden">
             <div className="flex flex-row items-center bg-gradient-noise-top text-muted-foreground gap-0.5 rounded-md p-1 transition-all rounded-bl-xl">
-              <a aria-label="Go to settings" role="button" data-state="closed" href="/settings/customization" data-discover="true">
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 size-8 rounded-bl-xl">
+              <Link aria-label="Go to settings" href="/settings">
+                <Button variant="ghost" size="icon" type="button">
                   <Settings2Icon className="size-4" />
-                </button>
-              </a>
-              <button
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 group relative size-8"
-                tabIndex={-1}
-              >
-                <MoonIcon className="size-4 rotate-0 scale-100 transition-all duration-200" />
-                <span className="sr-only">Toggle theme</span>
-              </button>
+                </Button>
+              </Link>
+
+              <ModeToggle />
             </div>
           </div>
           <div
@@ -211,67 +277,75 @@ export function Chat() {
             aria-live="polite"
             className="mx-auto flex w-full max-w-3xl flex-col space-y-12 px-4 pb-10 pt-safe-offset-10"
           >
-            {inputValue.length === 0 && messages.length === 0 ? (
-              <NewChatMessages onSelectMessage={(message) => setInputValue(message)} />
+            {showNewChatMessages && inputValue.length === 0 ? (
+              <NewChatMessages
+                serverUser={serverUser}
+                onSelectMessage={(message) => {
+                  setInputValue(message);
+                  inputRef.current?.focus();
+                }}
+              />
             ) : (
               <>
-                <div ref={messageContainerRef}>
-                  <div>
-                    {messages.map((message) => (
-                      <Fragment key={message._id}>
-                        <Message message={message} />
-                        {message.responseStreamId && (
-                          <ServerMessage
-                            message={message}
-                            isDriven={drivenIds.has(message._id)}
-                            stopStreaming={() => {
-                              setIsStreaming(false);
-                              focusInput();
-                            }}
-                            scrollToBottom={scrollToBottom}
-                            threadId={chatId as Id<'threads'>}
-                          />
-                        )}
-                      </Fragment>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
+                {messages?.data?.map((message) => (
+                  <Fragment key={message._id}>
+                    <Message
+                      message={message}
+                      sessionId={sessionId}
+                      onRetry={async (modelId: string | undefined) => {
+                        if (!sessionId) {
+                          return;
+                        }
+
+                        setSessionIdCookie(sessionId);
+
+                        const { threadId, messageId } = await retryMessage({
+                          messageId: message._id,
+                          sessionId,
+                          modelId,
+                        });
+
+                        setChatId(threadId);
+
+                        setDrivenIds((prev) => {
+                          prev.add(messageId);
+                          return prev;
+                        });
+                      }}
+                      onEdit={async (content: string, files: Id<'_storage'>[]) => {
+                        if (!sessionId) {
+                          return;
+                        }
+
+                        setSessionIdCookie(sessionId);
+
+                        const { threadId, messageId } = await editMessage({
+                          messageId: message._id,
+                          sessionId,
+                          content,
+                          files,
+                        });
+
+                        setChatId(threadId);
+
+                        setDrivenIds((prev) => {
+                          prev.add(messageId);
+                          return prev;
+                        });
+                      }}
+                    />
+
+                    {message.responseStreamId && (
+                      <ServerMessage message={message} isDriven={drivenIds.has(message._id)} threadId={chatId as Id<'threads'>} />
+                    )}
+                  </Fragment>
+                ))}
+                <div ref={messagesEndRef} className="size-2" />
               </>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-type Props = {
-  message: Doc<'messages'>;
-  children: React.ReactNode;
-  isUser: boolean;
-};
-
-export default function MessageItem({ message, children, isUser }: Props) {
-  return (
-    <>
-      <div className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-        <div className={`flex gap-4 max-w-[95%] md:max-w-[85%] ${isUser && 'flex-row-reverse'}`}>
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} font-medium text-sm`}
-          >
-            {isUser ? 'U' : 'AI'}
-          </div>
-
-          <div
-            className={`rounded-lg px-5 py-4 text-base ${
-              isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 border border-gray-200 text-gray-900'
-            }`}
-          >
-            {children}
-          </div>
-        </div>
-      </div>
-    </>
   );
 }

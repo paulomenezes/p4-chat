@@ -4,14 +4,15 @@ import * as React from 'react';
 import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { useConvexAuth, useQuery } from 'convex/react';
-import { useAuthActions } from '@convex-dev/auth/react';
+import { useQuery } from 'convex-helpers/react/cache/hooks';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { startOfDay, subDays, isAfter, isSameDay } from 'date-fns';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { ThreadItem } from './thread-item';
+import { useSessionId } from 'convex-helpers/react/sessions';
+import { useQueryWithStatus } from '@/hooks/use-query';
 
 type ThreadsGroup = {
   pinned?: Doc<'threads'>[];
@@ -21,11 +22,14 @@ type ThreadsGroup = {
   last30Days?: Doc<'threads'>[];
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isAuthenticated } = useConvexAuth();
-  const { signOut } = useAuthActions();
-  const user = useQuery(api.user.currentUser);
-  const threads = useQuery(api.theads.getByUserId);
+export function AppSidebar({
+  serverUser,
+  serverThreads,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { serverUser: Doc<'users'> | null; serverThreads: Doc<'threads'>[] }) {
+  const [sessionId] = useSessionId();
+  const user = useQuery(api.user.currentUser) ?? serverUser;
+  const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
 
   const threadsGroups = useMemo(() => {
@@ -106,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <PinIcon className="-ml-0.5 mr-1 mt-px !size-3" />
                   Pinned
@@ -120,7 +124,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Today</span>
                 </div>
@@ -133,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Yesterday</span>
                 </div>
@@ -146,7 +150,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Last 7 Days</span>
                 </div>
@@ -159,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div data-sidebar="group" className="relative flex w-full min-w-0 flex-col p-2">
                 <div
                   data-sidebar="group-label"
-                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&amp;&gt;svg]:size-4 [&amp;&gt;svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
+                  className="flex h-8 shrink-0 select-none items-center rounded-md text-xs font-medium outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-snappy focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 px-1.5 text-color-heading"
                 >
                   <span>Last 30 Days</span>
                 </div>
@@ -172,12 +176,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarContent>
       <SidebarFooter>
-        {isAuthenticated && user ? (
-          <button
+        {user ? (
+          <Link
             aria-label="Go to settings"
             role="button"
             className="flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2 text-left"
-            onClick={() => signOut()}
+            href="/settings"
           >
             <div className="flex w-full min-w-0 flex-row items-center gap-3">
               <Image
@@ -193,7 +197,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="text-xs">Pro</span>
               </div>
             </div>
-          </button>
+          </Link>
         ) : (
           <Link
             aria-label="Login"

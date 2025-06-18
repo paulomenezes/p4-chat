@@ -1,14 +1,34 @@
 'use client';
 
 import type { ChatRequestOptions } from 'ai';
-import { ArrowUpIcon, ChevronDownIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
+import { ArrowUpIcon, GlobeIcon, SquareIcon } from 'lucide-react';
+import { ModelSelector } from './model-selector';
+import { useMutation } from 'convex/react';
+import { api } from '@p4-chat/backend/convex/_generated/api';
+import { Button } from './ui/button';
+import { Uploader } from './uploader';
+import { UploaderFileList } from './uploader-file-list';
+import type { InputHTMLAttributes } from 'react';
+import type { FileWithPreview } from '@/hooks/use-file-upload';
 
 export function ChatForm({
   input,
+  currentStreamId,
+  inputRef,
+  isSearching,
+  setIsSearching,
   handleInputChange,
   handleSubmit,
+  files,
+  removeFile,
+  getInputProps,
+  openFileDialog,
 }: {
   input: string;
+  currentStreamId: string | undefined;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  isSearching: boolean;
+  setIsSearching: (isSearching: boolean) => void;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (
     event?: {
@@ -16,13 +36,18 @@ export function ChatForm({
     },
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
+  files: FileWithPreview[];
+  removeFile: (id: string) => void;
+  getInputProps: (props?: InputHTMLAttributes<HTMLInputElement>) => InputHTMLAttributes<HTMLInputElement> & {
+    ref: React.Ref<HTMLInputElement>;
+  };
+  openFileDialog: () => void;
 }) {
-  // const { messages, input, handleInputChange, handleSubmit, setInput } = useChat();
+  const stopStreaming = useMutation(api.messages.stopStreaming);
 
   return (
     <div>
       <form
-        action="javascript:throw new Error('A React form was unexpectedly submitted. If you called form.submit() manually, consider using form.requestSubmit() instead. If you\'re trying to use event.stopPropagation() in a submit event handler, consider also calling event.preventDefault().')"
         className="relative flex w-full flex-col items-stretch gap-2 rounded-t-xl border border-b-0 border-white/70 bg-chat-input-background px-3 pt-3 text-secondary-foreground outline-8 outline-chat-input-gradient/50 pb-safe-offset-3 max-sm:pb-6 sm:max-w-3xl dark:border-[hsl(0,0%,83%)]/[0.04] dark:bg-secondary/[0.045] dark:outline-chat-background/40"
         style={{
           boxShadow:
@@ -31,7 +56,7 @@ export function ChatForm({
         onSubmit={handleSubmit}
       >
         <div className="flex flex-grow flex-col">
-          <div></div>
+          <UploaderFileList files={files} removeFile={removeFile} />
           <div className="flex flex-grow flex-row items-start">
             <textarea
               placeholder="Type your message here..."
@@ -42,8 +67,15 @@ export function ChatForm({
               id="message"
               name="message"
               value={input}
+              ref={inputRef}
               onBlur={handleInputChange}
               onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
             ></textarea>
             <div id="chat-input-description" className="sr-only">
               Press Enter to send, Shift + Enter for new line
@@ -54,47 +86,34 @@ export function ChatForm({
               <button
                 className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border-reflect button-reflect bg-[rgb(162,59,103)] font-semibold shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 w-9 relative rounded-lg p-2 text-pink-50"
                 type="submit"
-                disabled={input.length === 0}
+                disabled={input.length === 0 && !currentStreamId}
                 aria-label="Message requires text"
                 data-state="closed"
+                onClick={() => {
+                  if (currentStreamId) {
+                    stopStreaming({ streamId: currentStreamId });
+                  }
+                }}
               >
-                <ArrowUpIcon className="!size-5" />
+                {currentStreamId ? <SquareIcon className="!size-5 fill-current" /> : <ArrowUpIcon className="!size-5" />}
               </button>
             </div>
 
             <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
               <div className="ml-[-7px] flex items-center gap-1">
-                <button
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-8 rounded-md text-xs relative gap-2 px-2 py-1.5 -mb-2 text-muted-foreground"
-                  type="button"
-                  id="radix-:r81:"
-                  aria-haspopup="menu"
-                  aria-expanded="false"
-                  data-state="closed"
-                >
-                  <div className="text-left text-sm font-medium">Gemini 2.5 Flash</div>
-                  <ChevronDownIcon className="right-0 size-4" />
-                </button>
-                <button
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 px-3 text-xs -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 py-1.5 pl-2 pr-2.5 text-muted-foreground max-sm:p-2"
-                  type="button"
-                  aria-label="Enable search"
-                  data-state="closed"
+                <ModelSelector />
+
+                <Button
+                  size="xs"
+                  className="rounded-full pl-2 pr-2.5 -mb-1.5"
+                  variant={isSearching ? 'default' : 'outline'}
+                  onClick={() => setIsSearching(!isSearching)}
                 >
                   <GlobeIcon className="h-4 w-4 scale-x-[-1]" />
                   <span className="max-sm:hidden">Search</span>
-                </button>
-                <label
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 text-xs cursor-pointer -mb-1.5 h-auto gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-muted-foreground max-sm:p-2"
-                  aria-label="Attach a file"
-                  data-state="closed"
-                >
-                  <input multiple={false} className="sr-only" type="file" />
-                  <div className="flex gap-1">
-                    <PaperclipIcon className="size-4" />
-                    <span className="max-sm:hidden sm:ml-0.5">Attach</span>
-                  </div>
-                </label>
+                </Button>
+
+                <Uploader getInputProps={getInputProps} openFileDialog={openFileDialog} />
               </div>
             </div>
           </div>
