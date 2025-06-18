@@ -13,7 +13,7 @@ export default async function ChatLayout({
   children: React.ReactNode;
 }>) {
   const sessionId = (await cookies()).get('sessionId')?.value as SessionId | null;
-  const sidebarOpen = (await cookies()).get('sidebarOpen')?.value === 'true';
+  const sidebarOpen = ((await cookies()).get('sidebarOpen')?.value ?? 'true') === 'true';
   const token = { token: await convexAuthNextjsToken() };
 
   const [user, threads] = await Promise.allSettled([
