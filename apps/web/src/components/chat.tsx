@@ -24,8 +24,8 @@ import { cn } from '@/lib/utils';
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
 const maxSizeMB = 2;
-const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
 const maxFiles = 2;
+const maxSize = maxSizeMB * 1024 * 1024;
 
 export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'> | null; serverSessionId: SessionId | null }) {
   const [chatId, setChatId] = useQueryState('chat');
@@ -42,9 +42,46 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
         }
       : 'skip',
   );
-  const sendMessage = useMutation(api.messages.sendMessage);
+  const sendMessage = useMutation(api.messages.sendMessage).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore.getQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> });
+
+    if (!currentValue || !chatId) {
+      return;
+    }
+
+    const newMessage: (typeof currentValue)[number] = {
+      role: 'user',
+      content: args.prompt,
+      userId: sessionId as unknown as Id<'users'>,
+      threadId: chatId as Id<'threads'>,
+      _creationTime: Date.now(),
+      _id: 'new' as unknown as Id<'messages'>,
+    };
+
+    const newMessages = [...currentValue, newMessage];
+
+    localStore.setQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> }, newMessages);
+  });
   const retryMessage = useMutation(api.messages.retryMessage);
-  const editMessage = useMutation(api.messages.editMessage);
+  const editMessage = useMutation(api.messages.editMessage).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore
+      .getQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> })
+      ?.map((m) => (m._id === args.messageId ? { ...m, content: args.content } : m));
+
+    if (!currentValue) {
+      return;
+    }
+
+    localStore.setQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> }, currentValue);
+  });
   const [inputValue, setInputValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isIntersecting, setIntersecting] = useState(false);

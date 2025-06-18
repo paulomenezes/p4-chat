@@ -202,7 +202,7 @@ export const branchOff = mutationWithSession({
       .withIndex('by_threadId', (q) => q.eq('threadId', id))
       .collect();
 
-    const messagesUntilId = [];
+    const messagesUntilId: typeof messages = [];
     for (const message of messages) {
       messagesUntilId.push(message);
       if (message._id === messageId) {
@@ -222,7 +222,22 @@ export const branchOff = mutationWithSession({
     // Copy messages to new thread with search results
     for (const message of messagesUntilId) {
       const newMessageId = await ctx.db.insert('messages', {
-        ...message,
+        role: message.role,
+        content: message.content,
+        userId: message.userId,
+        responseStreamId: message.responseStreamId,
+        model: message.model,
+        promptTokens: message.promptTokens,
+        completionTokens: message.completionTokens,
+        totalTokens: message.totalTokens,
+        durationSeconds: message.durationSeconds,
+        tokensPerSecond: message.tokensPerSecond,
+        reasoning: message.reasoning,
+        stopped: message.stopped,
+        stoppedReason: message.stoppedReason,
+        isSearching: message.isSearching,
+        searchQueries: message.searchQueries,
+        files: message.files,
         threadId: newThreadId,
       });
 

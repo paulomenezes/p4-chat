@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
       new URL('https://laudable-lobster-170.convex.cloud/**'),
     ],
   },
+  experimental: {
+    ppr: 'incremental',
+  },
 };
 
 export default nextConfig;

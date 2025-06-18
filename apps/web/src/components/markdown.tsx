@@ -10,32 +10,16 @@ const components: (disableHighlight: boolean) => Partial<Components> = (disableH
   code: (props) => <CodeBlock {...props} disableHighlight={disableHighlight} />,
   pre: ({ children }) => <>{children}</>,
   ol: ({ node, children, ...props }) => {
-    return (
-      <ol className="list-decimal list-outside ml-4" {...props}>
-        {children}
-      </ol>
-    );
+    return <ol {...props}>{children}</ol>;
   },
   li: ({ node, children, ...props }) => {
-    return (
-      <li className="py-1" {...props}>
-        {children}
-      </li>
-    );
+    return <li {...props}>{children}</li>;
   },
   ul: ({ node, children, ...props }) => {
-    return (
-      <ul className="list-decimal list-outside ml-4" {...props}>
-        {children}
-      </ul>
-    );
+    return <ul {...props}>{children}</ul>;
   },
   strong: ({ node, children, ...props }) => {
-    return (
-      <span className="font-semibold" {...props}>
-        {children}
-      </span>
-    );
+    return <span {...props}>{children}</span>;
   },
   a: ({ node, children, ...props }) => {
     return (

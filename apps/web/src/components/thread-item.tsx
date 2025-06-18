@@ -32,8 +32,34 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
   const [isOpenShareModal, setIsOpenShareModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const togglePin = useMutation(api.threads.togglePin);
-  const remove = useMutation(api.threads.remove);
+  const togglePin = useMutation(api.threads.togglePin).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore
+      .getQuery(api.threads.getByUserIdOrSessionId, { sessionId })
+      ?.map((t) => (t._id === args.id ? { ...t, pinned: !t.pinned } : t));
+
+    if (!currentValue) {
+      return;
+    }
+
+    localStore.setQuery(api.threads.getByUserIdOrSessionId, { sessionId }, currentValue);
+  });
+
+  const remove = useMutation(api.threads.remove).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore.getQuery(api.threads.getByUserIdOrSessionId, { sessionId })?.filter((t) => t._id !== args.id);
+
+    if (!currentValue) {
+      return;
+    }
+  });
+
   const rename = useMutation(api.threads.rename).withOptimisticUpdate((localStore, args) => {
     if (!sessionId) {
       return;
