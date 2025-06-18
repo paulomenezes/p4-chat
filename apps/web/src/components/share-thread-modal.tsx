@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { ShareIcon, SendIcon, XIcon } from 'lucide-react';
 import { TagInput } from 'emblor';
 import type { Tag } from 'emblor';
@@ -27,22 +27,19 @@ export function ShareThreadModal({ thread, isOpen, onOpenChange }: ShareThreadMo
   const removeShare = useMutation(api.threads.removeShare);
   const shares = useQuery(api.threads.getShares, sessionId ? { threadId: thread._id, sessionId } : 'skip');
 
-  const isValidEmail = useCallback((email: string) => {
+  function isValidEmail(email: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  }, []);
+  }
 
   // Handle tag addition with validation
-  const handleSetTags = useCallback(
-    (newTags: Tag[] | ((prevTags: Tag[]) => Tag[])) => {
-      const tagsArray = typeof newTags === 'function' ? newTags(tags) : newTags;
-      const validTags = tagsArray.filter((tag) => isValidEmail(tag.text));
-      setTags(validTags);
-    },
-    [tags, isValidEmail],
-  );
+  function handleSetTags(newTags: Tag[] | ((prevTags: Tag[]) => Tag[])) {
+    const tagsArray = typeof newTags === 'function' ? newTags(tags) : newTags;
+    const validTags = tagsArray.filter((tag) => isValidEmail(tag.text));
+    setTags(validTags);
+  }
 
-  const handleShare = useCallback(async () => {
+  async function handleShare() {
     if (tags.length === 0 || !sessionId) {
       return;
     }
@@ -74,28 +71,25 @@ export function ShareThreadModal({ thread, isOpen, onOpenChange }: ShareThreadMo
     } finally {
       setIsSharing(false);
     }
-  }, [tags, thread._id, message, onOpenChange, sessionId, shareThread]);
+  }
 
-  const handleClose = useCallback(() => {
+  function handleClose() {
     onOpenChange(false);
     setTags([]);
     setMessage('');
-  }, [onOpenChange, thread.title]);
+  }
 
-  const handleRemoveShare = useCallback(
-    (shareId: Id<'threadShares'>) => {
-      if (!sessionId) {
-        return;
-      }
+  function handleRemoveShare(shareId: Id<'threadShares'>) {
+    if (!sessionId) {
+      return;
+    }
 
-      toast.promise(removeShare({ id: shareId, sessionId }), {
-        loading: 'Removing share...',
-        success: 'Share removed successfully',
-        error: 'Failed to remove share',
-      });
-    },
-    [removeShare, sessionId],
-  );
+    toast.promise(removeShare({ id: shareId, sessionId }), {
+      loading: 'Removing share...',
+      success: 'Share removed successfully',
+      error: 'Failed to remove share',
+    });
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

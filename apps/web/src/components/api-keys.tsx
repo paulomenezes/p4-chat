@@ -2,7 +2,7 @@
 
 import { deleteApiKey, setApiKey } from '@/actions/set-api-key';
 import { CheckIcon, KeyIcon, Trash2Icon } from 'lucide-react';
-import { useCallback, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { api } from '@p4-chat/backend/convex/_generated/api';
@@ -17,7 +17,7 @@ export function ApiKeys() {
   const [googleKey, setGoogleKey] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  const handleSave = useCallback(async (type: 'openRouter' | 'openai' | 'google', key: string) => {
+  async function handleSave(type: 'openRouter' | 'openai' | 'google', key: string) {
     if (!key) {
       toast.error('API key is required');
       return;
@@ -38,9 +38,9 @@ export function ApiKeys() {
         setGoogleKey('');
       }
     });
-  }, []);
+  }
 
-  const handleDelete = useCallback(async (type: 'openRouter' | 'openai' | 'google') => {
+  async function handleDelete(type: 'openRouter' | 'openai' | 'google') {
     startTransition(async () => {
       toast.promise(deleteApiKey(type), {
         loading: 'Deleting...',
@@ -48,7 +48,7 @@ export function ApiKeys() {
         error: 'Failed to delete API key',
       });
     });
-  }, []);
+  }
 
   return (
     <div className="space-y-4 w-full">

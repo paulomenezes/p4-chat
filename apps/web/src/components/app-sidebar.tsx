@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useQuery } from 'convex-helpers/react/cache/hooks';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { startOfDay, subDays, isAfter, isSameDay } from 'date-fns';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { ThreadItem } from './thread-item';
@@ -33,39 +33,31 @@ export function AppSidebar({
   const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
 
-  const { toggleSidebar } = useSidebar();
+  const now = new Date();
+  const today = startOfDay(now);
+  const yesterday = subDays(today, 1);
+  const last7Days = subDays(today, 7);
+  const last30Days = subDays(today, 30);
 
-  const threadsGroups = useMemo(() => {
-    if (!threads) {
-      return {} as ThreadsGroup;
-    }
+  const threadsGroups = threads
+    .filter((thread) => thread.title.toLowerCase().includes(search.toLowerCase()))
+    .reduce((acc, thread) => {
+      const threadDate = new Date(thread._creationTime);
 
-    const now = new Date();
-    const today = startOfDay(now);
-    const yesterday = subDays(today, 1);
-    const last7Days = subDays(today, 7);
-    const last30Days = subDays(today, 30);
+      if (thread.pinned) {
+        acc.pinned = [...(acc.pinned || []), thread];
+      } else if (isAfter(threadDate, today) || isSameDay(threadDate, today)) {
+        acc.today = [...(acc.today || []), thread];
+      } else if (isSameDay(threadDate, yesterday)) {
+        acc.yesterday = [...(acc.yesterday || []), thread];
+      } else if (isAfter(threadDate, last7Days)) {
+        acc.last7Days = [...(acc.last7Days || []), thread];
+      } else if (isAfter(threadDate, last30Days)) {
+        acc.last30Days = [...(acc.last30Days || []), thread];
+      }
 
-    return threads
-      .filter((thread) => thread.title.toLowerCase().includes(search.toLowerCase()))
-      .reduce((acc, thread) => {
-        const threadDate = new Date(thread._creationTime);
-
-        if (thread.pinned) {
-          acc.pinned = [...(acc.pinned || []), thread];
-        } else if (isAfter(threadDate, today) || isSameDay(threadDate, today)) {
-          acc.today = [...(acc.today || []), thread];
-        } else if (isSameDay(threadDate, yesterday)) {
-          acc.yesterday = [...(acc.yesterday || []), thread];
-        } else if (isAfter(threadDate, last7Days)) {
-          acc.last7Days = [...(acc.last7Days || []), thread];
-        } else if (isAfter(threadDate, last30Days)) {
-          acc.last30Days = [...(acc.last30Days || []), thread];
-        }
-
-        return acc;
-      }, {} as ThreadsGroup);
-  }, [threads, search]);
+      return acc;
+    }, {} as ThreadsGroup);
 
   return (
     <Sidebar variant="inset" {...props}>

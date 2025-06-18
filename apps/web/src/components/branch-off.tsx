@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { ModelFeatures } from './model-features';
-import { useCallback } from 'react';
 import { MODEL_GROUPS } from '@/lib/model-groups';
 import { getModelName } from '@/lib/utils';
 
@@ -34,15 +33,12 @@ export function BranchOff({
   const branchOff = useMutation(api.threads.branchOff);
   const [, setChatId] = useQueryState('chat');
 
-  const onSelect = useCallback(
-    async (modelId: string | undefined) => {
-      if (sessionId) {
-        const newThreadId = await branchOff({ id: message.threadId, messageId: message._id, sessionId, modelId });
-        setChatId(newThreadId);
-      }
-    },
-    [branchOff, message.threadId, message._id, sessionId, setChatId],
-  );
+  async function onSelect(modelId: string | undefined) {
+    if (sessionId) {
+      const newThreadId = await branchOff({ id: message.threadId, messageId: message._id, sessionId, modelId });
+      setChatId(newThreadId);
+    }
+  }
 
   return (
     <DropdownMenu>

@@ -4,7 +4,7 @@ import { useQuery } from 'convex/react';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { DownloadIcon, ExternalLinkIcon, XIcon } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { LoadingImage } from './loading';
@@ -46,7 +46,7 @@ function MessageFile({
 
   const isImage = url?.metadata?.contentType?.startsWith('image/');
 
-  const download = useCallback(() => {
+  function download() {
     if (!url?.url) {
       return;
     }
@@ -68,15 +68,15 @@ function MessageFile({
       .catch(() => {
         toast.error('Failed to download file');
       });
-  }, [url?.url]);
+  }
 
-  const openInNewTab = useCallback(() => {
+  function openInNewTab() {
     if (!url?.url) {
       return;
     }
 
     window.open(url.url, '_blank');
-  }, [url]);
+  }
 
   return failed ? (
     <div className="text-red-500">Failed to load file</div>

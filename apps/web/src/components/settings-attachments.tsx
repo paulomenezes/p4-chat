@@ -3,7 +3,7 @@
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Button } from './ui/button';
 import { ExternalLinkIcon, PaperclipIcon, Trash2Icon } from 'lucide-react';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
@@ -19,26 +19,26 @@ export function SettingsAttachments() {
 
   const isAllSelected = selectedAttachments.length > 0 && selectedAttachments.length === attachments?.length;
 
-  const handleSelectAll = useCallback(() => {
+  function handleSelectAll() {
     if (isAllSelected) {
       setSelectedAttachments([]);
     } else {
       setSelectedAttachments(attachments?.map((attachment) => attachment.storageId) ?? []);
     }
-  }, [isAllSelected, attachments, setSelectedAttachments]);
+  }
 
-  const handleClearSelection = useCallback(() => {
+  function handleClearSelection() {
     setSelectedAttachments([]);
-  }, [setSelectedAttachments]);
+  }
 
-  const handleDeleteSelected = useCallback(() => {
+  function handleDeleteSelected() {
     toast.promise(deleteAttachments({ storageIds: selectedAttachments }), {
       loading: 'Deleting attachments...',
       success: 'Attachments deleted',
       error: 'Failed to delete attachments',
     });
     setSelectedAttachments([]);
-  }, [deleteAttachments, selectedAttachments]);
+  }
 
   if (attachments && attachments.length === 0) {
     return (
@@ -111,7 +111,7 @@ function AttachmentItem({
 
   const isImage = url?.metadata?.contentType?.startsWith('image/');
 
-  const handleDelete = useCallback(() => {
+  function handleDelete() {
     startDeleting(() => {
       toast.promise(deleteAttachment({ storageId: attachment.storageId }), {
         loading: 'Deleting attachment...',
@@ -119,18 +119,15 @@ function AttachmentItem({
         error: 'Failed to delete attachment',
       });
     });
-  }, [deleteAttachment, attachment.storageId, startDeleting]);
+  }
 
-  const handleSelect = useCallback(
-    (checked: boolean) => {
-      if (checked) {
-        setSelectedAttachments([...selectedAttachments, attachment.storageId]);
-      } else {
-        setSelectedAttachments(selectedAttachments.filter((id) => id !== attachment.storageId));
-      }
-    },
-    [attachment.storageId, selectedAttachments, setSelectedAttachments],
-  );
+  function handleSelect(checked: boolean) {
+    if (checked) {
+      setSelectedAttachments([...selectedAttachments, attachment.storageId]);
+    } else {
+      setSelectedAttachments(selectedAttachments.filter((id) => id !== attachment.storageId));
+    }
+  }
 
   return (
     <div className="flex items-center gap-4 border-b border-input p-4 last:border-0" role="button" tabIndex={0}>

@@ -11,7 +11,7 @@ import { Markdown } from './markdown';
 import { ChevronDownIcon, ChevronRightIcon, Loader2Icon } from 'lucide-react';
 import { Loading, LoadingImage } from './loading';
 
-export default function ServerMessage({
+export default function MessageStream({
   message,
   isDriven,
   threadId,

@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { useMutation } from 'convex/react';
@@ -48,36 +48,31 @@ export function ModelSelector() {
   const [open, setOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
-  const selectedModel = useMemo(() => {
-    return getModelFromId(userConfig?.data?.currentlySelectedModel);
-  }, [userConfig?.data?.currentlySelectedModel]);
+  const selectedModel = getModelFromId(userConfig?.data?.currentlySelectedModel);
 
-  const filteredModels = useMemo(() => {
-    if (selectedFeatures.length === 0) {
-      return MODELS;
-    }
+  const filteredModels =
+    selectedFeatures.length === 0
+      ? MODELS
+      : MODELS.filter((model) => {
+          let isMatch = false;
 
-    return MODELS.filter((model) => {
-      let isMatch = false;
+          for (const selectedFeature of selectedFeatures) {
+            if (selectedFeature === 'reasoning' && model.supported_parameters.includes('reasoning')) {
+              isMatch = true;
+            }
+            if (selectedFeature === 'vision' && model.architecture.input_modalities.includes('image')) {
+              isMatch = true;
+            }
+            if (selectedFeature === 'pdfs' && model.architecture.input_modalities.includes('file')) {
+              isMatch = true;
+            }
+            if (selectedFeature === 'fast' && model.description.includes('fast')) {
+              isMatch = true;
+            }
 
-      for (const selectedFeature of selectedFeatures) {
-        if (selectedFeature === 'reasoning' && model.supported_parameters.includes('reasoning')) {
-          isMatch = true;
-        }
-        if (selectedFeature === 'vision' && model.architecture.input_modalities.includes('image')) {
-          isMatch = true;
-        }
-        if (selectedFeature === 'pdfs' && model.architecture.input_modalities.includes('file')) {
-          isMatch = true;
-        }
-        if (selectedFeature === 'fast' && model.description.includes('fast')) {
-          isMatch = true;
-        }
-
-        return isMatch;
-      }
-    });
-  }, [selectedFeatures]);
+            return isMatch;
+          }
+        });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

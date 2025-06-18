@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { DownloadIcon, TextIcon, WrapTextIcon } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { codeToHtml } from 'shiki';
 import { toast } from 'sonner';
 import { CopyToClipboard } from './copy-to-clipboard';
@@ -47,11 +47,11 @@ export function CodeBlock({ node, className, children, disableHighlight, ...prop
 
   const language = className?.startsWith('language-') ? className.slice(9) : '';
 
-  const getFileExtension = useCallback(() => {
+  function getFileExtension() {
     return extensionMap[language] || 'txt';
-  }, [language]);
+  }
 
-  const downloadCode = useCallback(() => {
+  function downloadCode() {
     try {
       const extension = getFileExtension();
       const blob = new Blob([children], { type: 'text/plain' });
@@ -67,7 +67,7 @@ export function CodeBlock({ node, className, children, disableHighlight, ...prop
     } catch (err) {
       toast.error('Failed to download file');
     }
-  }, [children, getFileExtension]);
+  }
 
   useEffect(() => {
     if (disableHighlight) {

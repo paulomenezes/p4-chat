@@ -1,5 +1,5 @@
 import { CheckIcon, CopyIcon, Loader2Icon } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import type { Id } from '@p4-chat/backend/convex/_generated/dataModel';
@@ -9,7 +9,7 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 export function CopyToClipboard({ variant = 'secondary', content }: { content: string; variant?: 'secondary' | 'ghost' }) {
   const [copied, setCopied] = useState(false);
 
-  const copyToClipboard = useCallback(async () => {
+  async function copyToClipboard() {
     try {
       await navigator.clipboard.writeText(content);
       setCopied(true);
@@ -18,7 +18,7 @@ export function CopyToClipboard({ variant = 'secondary', content }: { content: s
     } catch (err) {
       toast.error('Failed to copy text');
     }
-  }, [content]);
+  }
 
   return (
     <Button variant={variant} aria-label="Copy to clipboard" onClick={copyToClipboard} size="icon">
@@ -39,7 +39,7 @@ export function CopyImageToClipboard({ variant = 'secondary', storageId }: { sto
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const copyToClipboard = useCallback(async () => {
+  async function copyToClipboard() {
     if (!url?.url) {
       return;
     }
@@ -58,7 +58,7 @@ export function CopyImageToClipboard({ variant = 'secondary', storageId }: { sto
         toast.error('Failed to copy image to clipboard');
         setIsLoading(false);
       });
-  }, [url?.url]);
+  }
 
   return (
     <Button variant={variant} aria-label="Copy to clipboard" onClick={copyToClipboard} size="icon" disabled={isLoading}>

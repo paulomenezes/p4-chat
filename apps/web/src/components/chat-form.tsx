@@ -1,6 +1,5 @@
 'use client';
 
-import type { ChatRequestOptions } from 'ai';
 import { ArrowUpIcon, GlobeIcon, SquareIcon } from 'lucide-react';
 import { ModelSelector } from './model-selector';
 import { useMutation } from 'convex/react';
@@ -8,47 +7,125 @@ import { api } from '@p4-chat/backend/convex/_generated/api';
 import { Button } from './ui/button';
 import { Uploader } from './uploader';
 import { UploaderFileList } from './uploader-file-list';
-import type { InputHTMLAttributes } from 'react';
-import type { FileWithPreview } from '@/hooks/use-file-upload';
-import { useMemo } from 'react';
+import { useFileUpload } from '@/hooks/use-file-upload';
+import { useState } from 'react';
+import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
+import type { SessionId } from 'convex-helpers/server/sessions';
+import { setSessionIdCookie } from '@/actions/set-cookies';
+import { useQueryState } from 'nuqs';
+import { useSessionId } from 'convex-helpers/react/sessions';
+import { createPortal } from 'react-dom';
+import { NewChatMessages } from './new-chat-messages';
+
+const maxSizeMB = 2;
+const maxFiles = 2;
+const maxSize = maxSizeMB * 1024 * 1024;
 
 export function ChatForm({
-  input,
+  serverSessionId,
   currentStreamId,
   inputRef,
   isSearching,
+  serverUser,
+  showNewChatMessages,
   setIsSearching,
-  handleInputChange,
-  handleSubmit,
-  files,
-  removeFile,
-  getInputProps,
-  openFileDialog,
+  setIsEmpty,
+  setShowNewChatMessages,
+  setDrivenIds,
 }: {
-  input: string;
+  serverSessionId: SessionId | null;
   currentStreamId: string | undefined;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   isSearching: boolean;
+  serverUser: Doc<'users'> | null;
+  showNewChatMessages: boolean;
   setIsSearching: (isSearching: boolean) => void;
-  handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleSubmit: (
-    event?: {
-      preventDefault?: () => void;
-    },
-    chatRequestOptions?: ChatRequestOptions,
-  ) => void;
-  files: FileWithPreview[];
-  removeFile: (id: string) => void;
-  getInputProps: (props?: InputHTMLAttributes<HTMLInputElement>) => InputHTMLAttributes<HTMLInputElement> & {
-    ref: React.Ref<HTMLInputElement>;
-  };
-  openFileDialog: () => void;
+  setIsEmpty: (isEmpty: boolean) => void;
+  setShowNewChatMessages: (showNewChatMessages: boolean) => void;
+  setDrivenIds: (drivenIds: (prev: Set<string>) => Set<string>) => void;
 }) {
+  const [chatId, setChatId] = useQueryState('chat');
+  const [sessionId] = useSessionId() ?? [serverSessionId];
+
+  const [inputValue, setInputValue] = useState('');
   const stopStreaming = useMutation(api.messages.stopStreaming);
 
-  const hasSomeFileLoading = useMemo(() => {
-    return files.some((file) => file.isLoading);
-  }, [files]);
+  const [{ files }, { openFileDialog, removeFile, getInputProps, clearFiles }] = useFileUpload({
+    accept: 'image/png,image/jpeg,image/jpg,application/pdf',
+    maxSize,
+    multiple: true,
+    maxFiles,
+    sessionId,
+  });
+
+  function handleInputChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    setInputValue(event.target.value);
+    setIsEmpty(event.target.value.length === 0);
+  }
+
+  async function handleSubmit(event?: React.FormEvent<HTMLFormElement>) {
+    if (!sessionId) {
+      return;
+    }
+
+    event?.preventDefault?.();
+    setShowNewChatMessages(false);
+
+    const inputValue = inputRef.current?.value;
+
+    if (!inputValue?.trim() || !sessionId) {
+      return;
+    }
+
+    setInputValue('');
+    setSessionIdCookie(sessionId);
+
+    const { threadId, messageId } = await sendMessage({
+      prompt: inputValue,
+      threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
+      sessionId,
+      isSearching,
+      files: files.map((file) => file.storageId).filter((storageId) => storageId !== undefined),
+    });
+
+    setChatId(threadId);
+    clearFiles();
+
+    setDrivenIds((prev) => {
+      prev.add(messageId);
+      return prev;
+    });
+
+    inputRef.current?.focus();
+  }
+
+  const sendMessage = useMutation(api.messages.sendMessage).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore.getQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> });
+
+    if (!currentValue || !chatId) {
+      return;
+    }
+
+    const newMessage: (typeof currentValue)[number] = {
+      role: 'user',
+      content: args.prompt,
+      userId: sessionId as unknown as Id<'users'>,
+      threadId: chatId as Id<'threads'>,
+      _creationTime: Date.now(),
+      _id: 'new' as unknown as Id<'messages'>,
+    };
+
+    const newMessages = [...currentValue, newMessage];
+
+    localStore.setQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> }, newMessages);
+  });
+
+  const hasSomeFileLoading = files.some((file) => file.isLoading);
+  const element = document.getElementById('new-chat-messages');
 
   return (
     <div>
@@ -71,7 +148,7 @@ export function ChatForm({
               autoComplete="off"
               id="message"
               name="message"
-              value={input}
+              value={inputValue}
               ref={inputRef}
               onBlur={handleInputChange}
               onChange={handleInputChange}
@@ -91,7 +168,7 @@ export function ChatForm({
               <Button
                 size="icon"
                 type="submit"
-                disabled={(input.length === 0 && !currentStreamId) || hasSomeFileLoading}
+                disabled={(inputValue.length === 0 && !currentStreamId) || hasSomeFileLoading}
                 aria-label="Message requires text"
                 data-state="closed"
                 onClick={() => {
@@ -125,6 +202,24 @@ export function ChatForm({
           </div>
         </div>
       </form>
+
+      {!!element &&
+        showNewChatMessages &&
+        inputValue.length === 0 &&
+        createPortal(
+          <NewChatMessages
+            serverUser={serverUser}
+            onSelectMessage={(message) => {
+              if (!inputRef.current) {
+                return;
+              }
+
+              setInputValue(message);
+              inputRef.current.focus();
+            }}
+          />,
+          element,
+        )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { PinIcon, PinOffIcon, SplitIcon, XIcon, EditIcon, DownloadIcon, ShareIcon } from 'lucide-react';
 import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
@@ -20,10 +20,12 @@ import { cn } from '@/lib/utils';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from './ui/context-menu';
 import { ShareThreadModal } from './share-thread-modal';
+import { useSidebar } from './ui/sidebar';
 
 export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
   const [chatId, setChatId] = useQueryState('chat');
   const [sessionId] = useSessionId();
+  const { setOpenMobile } = useSidebar();
 
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [value, setValue] = useState(thread.title);
@@ -92,27 +94,27 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
     }
   }, [isRenaming]);
 
-  const handlePin = useCallback(() => {
+  function handlePin() {
     if (sessionId) {
       togglePin({ id: thread._id, sessionId });
     }
-  }, [sessionId, thread._id, togglePin]);
+  }
 
-  const handleRename = useCallback(() => {
+  function handleRename() {
     if (sessionId && value.trim() !== thread.title && value.trim()) {
       rename({ id: thread._id, title: value.trim(), sessionId });
     } else {
       setValue(thread.title);
     }
     setIsRenaming(false);
-  }, [sessionId, value, thread.title, rename]);
+  }
 
-  const handleCancelRename = useCallback(() => {
+  function handleCancelRename() {
     setValue(thread.title);
     setIsRenaming(false);
-  }, [thread.title]);
+  }
 
-  const handleDelete = useCallback(() => {
+  function handleDelete() {
     if (sessionId) {
       remove({ id: thread._id, sessionId });
       if (chatId === thread._id) {
@@ -120,9 +122,9 @@ export function ThreadItem({ thread }: { thread: Doc<'threads'> }) {
       }
     }
     setIsOpenDeleteDialog(false);
-  }, [sessionId, thread._id, chatId, remove]);
+  }
 
-  const handleExport = useCallback(() => {
+  function handleExport() {
     if (!threadData) return;
 
     setIsExporting(true);
@@ -162,7 +164,7 @@ ${msg.content}
     } finally {
       setIsExporting(false);
     }
-  }, [threadData]);
+  }
 
   return (
     <>
@@ -212,6 +214,7 @@ ${msg.content}
               )}
               href={`/?chat=${thread._id}`}
               prefetch={true}
+              onClick={() => setOpenMobile(false)}
             >
               <div className="relative flex w-full items-center">
                 {thread.parentThreadId && (

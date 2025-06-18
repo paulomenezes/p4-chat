@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { CheckIcon, XIcon } from 'lucide-react';
 import type { Doc, Id } from '@p4-chat/backend/convex/_generated/dataModel';
@@ -26,21 +26,21 @@ export function MessageEdit({ message, onSave, onCancel, isEditing }: MessageEdi
     }
   }, [isEditing]);
 
-  const handleSave = useCallback(() => {
+  function handleSave() {
     if (editContent.trim() !== message.content.trim() || editFiles.length !== (message.files?.length ?? 0)) {
       onSave(editContent.trim(), editFiles);
     } else {
       onCancel();
     }
-  }, [editContent, message.content, onSave, onCancel, editFiles]);
+  }
 
-  const handleCancel = useCallback(() => {
+  function handleCancel() {
     setEditContent(message.content);
     setEditFiles(message.files ?? []);
     onCancel();
-  }, [message.content, onCancel]);
+  }
 
-  const handleKeyDown = useCallback(
+  function handleKeyDown(e: React.KeyboardEvent) {
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -48,13 +48,12 @@ export function MessageEdit({ message, onSave, onCancel, isEditing }: MessageEdi
       } else if (e.key === 'Escape') {
         handleCancel();
       }
-    },
-    [handleSave, handleCancel],
-  );
+    };
+  }
 
-  const handleRemoveFile = useCallback((file: Id<'_storage'>) => {
+  function handleRemoveFile(file: Id<'_storage'>) {
     setEditFiles((prev) => prev.filter((f) => f !== file));
-  }, []);
+  }
 
   return (
     <div className="flex flex-col gap-3">

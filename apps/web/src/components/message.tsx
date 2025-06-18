@@ -13,19 +13,82 @@ import { MessageFiles } from './message-files';
 import { MessageAIContent } from './message-ai-content';
 import { MessageEdit } from './message-edit';
 import { Button } from './ui/button';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@p4-chat/backend/convex/_generated/api';
+import { setSessionIdCookie } from '@/actions/set-cookies';
+import { useQueryState } from 'nuqs';
 
 export function Message({
   message,
   sessionId,
-  onRetry,
-  onEdit,
+  setDrivenIds,
 }: {
   message: Doc<'messages'>;
   sessionId: SessionId | undefined;
-  onRetry: (modelId: string | undefined) => void;
-  onEdit: (content: string, files: Id<'_storage'>[]) => void;
+  setDrivenIds: (drivenIds: (prev: Set<string>) => Set<string>) => void;
 }) {
+  const [chatId, setChatId] = useQueryState('chat');
+
+  const retryMessage = useMutation(api.messages.retryMessage);
+  const editMessage = useMutation(api.messages.editMessage).withOptimisticUpdate((localStore, args) => {
+    if (!sessionId) {
+      return;
+    }
+
+    const currentValue = localStore
+      .getQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> })
+      ?.map((m) => (m._id === args.messageId ? { ...m, content: args.content } : m));
+
+    if (!currentValue) {
+      return;
+    }
+
+    localStore.setQuery(api.messages.listMessages, { sessionId, threadId: chatId as Id<'threads'> }, currentValue);
+  });
+
+  async function onRetry(modelId: string | undefined) {
+    if (!sessionId) {
+      return;
+    }
+
+    setSessionIdCookie(sessionId);
+
+    const { threadId, messageId } = await retryMessage({
+      messageId: message._id,
+      sessionId,
+      modelId,
+    });
+
+    setChatId(threadId);
+    setDrivenIds((prev) => {
+      prev.add(messageId);
+      return prev;
+    });
+  }
+
+  async function onEdit(content: string, files: Id<'_storage'>[]) {
+    if (!sessionId) {
+      return;
+    }
+
+    setSessionIdCookie(sessionId);
+
+    const { threadId, messageId } = await editMessage({
+      messageId: message._id,
+      sessionId,
+      content,
+      files,
+    });
+
+    setChatId(threadId);
+
+    setDrivenIds((prev) => {
+      prev.add(messageId);
+      return prev;
+    });
+  }
+
   return (
     <div data-message-id={message._id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
       {message.role === 'user' ? (
@@ -48,21 +111,18 @@ function UserMessage({
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleSave = useCallback(
-    (content: string, files: Id<'_storage'>[]) => {
-      onEdit(content, files);
-      setIsEditing(false);
-    },
-    [onEdit],
-  );
-
-  const handleEdit = useCallback(() => {
-    setIsEditing(true);
-  }, []);
-
-  const handleCancel = useCallback(() => {
+  function handleSave(content: string, files: Id<'_storage'>[]) {
+    onEdit(content, files);
     setIsEditing(false);
-  }, []);
+  }
+
+  function handleEdit() {
+    setIsEditing(true);
+  }
+
+  function handleCancel() {
+    setIsEditing(false);
+  }
 
   return (
     <div
