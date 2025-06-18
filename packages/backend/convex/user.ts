@@ -36,6 +36,7 @@ export const updateCurrentlySelectedModel = mutationWithSession({
   args: {
     id: v.optional(v.id('userConfig')),
     currentlySelectedModel: v.string(),
+    threadId: v.optional(v.id('threads')),
   },
   handler: async (ctx, args) => {
     const userId = ctx.userId;
@@ -53,6 +54,12 @@ export const updateCurrentlySelectedModel = mutationWithSession({
         userId,
         currentlySelectedModel: args.currentlySelectedModel,
         favoriteModels: [],
+      });
+    }
+
+    if (args.threadId) {
+      await ctx.db.patch(args.threadId, {
+        model: args.currentlySelectedModel,
       });
     }
   },

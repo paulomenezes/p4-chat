@@ -20,8 +20,11 @@ import { getModelFromId, getModelName } from '@/lib/utils';
 import { ModelFeatures } from './model-features';
 import { ModelIcon } from './model-icon';
 import { Button } from './ui/button';
+import { useQueryState } from 'nuqs';
+import type { Id } from '@p4-chat/backend/convex/_generated/dataModel';
 
 export function ModelSelector({ currentModel, setCurrentModel }: { currentModel: string; setCurrentModel: (model: string) => void }) {
+  const [chatId] = useQueryState('chat');
   const [sessionId] = useSessionId();
   const userConfig = useQueryWithStatus(api.user.getUserConfig, sessionId ? { sessionId } : 'skip');
   const updateCurrentlySelectedModel = useMutation(api.user.updateCurrentlySelectedModel).withOptimisticUpdate((localStore, args) => {
@@ -29,20 +32,26 @@ export function ModelSelector({ currentModel, setCurrentModel }: { currentModel:
       return;
     }
 
-    const currentValue = localStore.getQuery(api.user.getUserConfig, { sessionId });
+    const getUserConfigCurrentValue = localStore.getQuery(api.user.getUserConfig, { sessionId });
 
-    if (!currentValue) {
-      return;
+    if (getUserConfigCurrentValue) {
+      localStore.setQuery(
+        api.user.getUserConfig,
+        { sessionId },
+        {
+          ...getUserConfigCurrentValue,
+          currentlySelectedModel: args.currentlySelectedModel,
+        },
+      );
     }
 
-    localStore.setQuery(
-      api.user.getUserConfig,
-      { sessionId },
-      {
-        ...currentValue,
-        currentlySelectedModel: args.currentlySelectedModel,
-      },
-    );
+    if (args.threadId) {
+      const threadCurrentValue = localStore.getQuery(api.threads.getById, { id: args.threadId });
+
+      if (threadCurrentValue) {
+        localStore.setQuery(api.threads.getById, { id: args.threadId }, { ...threadCurrentValue, model: args.currentlySelectedModel });
+      }
+    }
   });
 
   const [open, setOpen] = useState(false);
@@ -101,11 +110,13 @@ export function ModelSelector({ currentModel, setCurrentModel }: { currentModel:
                         id: userConfig?.data?._id,
                         currentlySelectedModel: currentValue,
                         sessionId,
+                        threadId: chatId as Id<'threads'> | undefined,
                       });
                     } else {
                       updateCurrentlySelectedModel({
                         currentlySelectedModel: currentValue,
                         sessionId,
+                        threadId: chatId as Id<'threads'> | undefined,
                       });
                     }
 

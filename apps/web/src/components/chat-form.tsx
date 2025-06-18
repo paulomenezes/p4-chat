@@ -2,7 +2,7 @@
 
 import { ArrowUpIcon, GlobeIcon, SquareIcon } from 'lucide-react';
 import { ModelSelector } from './model-selector';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@p4-chat/backend/convex/_generated/api';
 import { Button } from './ui/button';
 import { Uploader } from './uploader';
@@ -53,6 +53,8 @@ export function ChatForm({
 
   const [inputValue, setInputValue] = useState('');
   const stopStreaming = useMutation(api.messages.stopStreaming);
+
+  const thread = useQuery(api.threads.getById, chatId ? { id: chatId as Id<'threads'> } : 'skip');
 
   const userConfig = useQueryWithStatus(api.user.getUserConfig, sessionId ? { sessionId } : 'skip');
   const selectedModel = getModelFromId(userConfig?.data?.currentlySelectedModel);
@@ -140,11 +142,10 @@ export function ChatForm({
   const element = typeof document !== 'undefined' ? document.getElementById('new-chat-messages') : null;
 
   useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      setCurrentModel(lastMessage.model ?? selectedModel.id);
+    if (thread) {
+      setCurrentModel(thread.model ?? selectedModel.id);
     }
-  }, [messages, selectedModel.id]);
+  }, [thread, selectedModel.id]);
 
   return (
     <div>
