@@ -7,6 +7,7 @@ import { codeToHtml } from 'shiki';
 import { toast } from 'sonner';
 import { CopyToClipboard } from './copy-to-clipboard';
 import { Button } from './ui/button';
+import { useTheme } from 'next-themes';
 
 interface CodeBlockProps {
   node: any;
@@ -44,6 +45,7 @@ export function CodeBlock({ node, className, children, disableHighlight, ...prop
   const inline = !(children ?? '').includes('\n');
   const [html, setHtml] = useState<string | null>(null);
   const [wrap, setWrap] = useState(false);
+  const { theme } = useTheme();
 
   const language = className?.startsWith('language-') ? className.slice(9) : '';
 
@@ -76,7 +78,7 @@ export function CodeBlock({ node, className, children, disableHighlight, ...prop
 
     codeToHtml(children, {
       lang: language,
-      theme: 'github-light',
+      theme: theme === 'dark' ? 'github-dark' : 'github-light',
     })
       .then((html) => {
         setHtml(html);
@@ -84,7 +86,7 @@ export function CodeBlock({ node, className, children, disableHighlight, ...prop
       .catch((err) => {
         console.log(err);
       });
-  }, [disableHighlight, children, language]);
+  }, [disableHighlight, children, language, theme]);
 
   if (!inline) {
     return (
