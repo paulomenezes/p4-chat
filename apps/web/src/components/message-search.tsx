@@ -17,7 +17,7 @@ export function MessageSearch({ message }: { message: Doc<'messages'> }) {
         <div className="flex items-center gap-2">
           <div className="mb-4 max-w-full">
             <button
-              className="mb-2 flex select-none items-center gap-2 text-sm text-secondary-foreground cursor-pointer"
+              className="mb-2 mt-8 flex select-none items-center gap-2 text-sm text-secondary-foreground cursor-pointer"
               aria-label="Hide search grounding details"
               onClick={() => setIsSearchGroundingOpen((prev) => !prev)}
             >
@@ -25,7 +25,7 @@ export function MessageSearch({ message }: { message: Doc<'messages'> }) {
               Search Grounding Details
             </button>
             {isSearchGroundingOpen && (
-              <div className="prose prose-pink mt-4 text-sm text-secondary-foreground dark:prose-invert">
+              <div className="prose prose-blue mt-4 text-sm text-secondary-foreground dark:prose-invert">
                 <div className="mt-2 space-y-4">
                   <div className="space-y-2">
                     <div className="font-medium text-foreground">Search Queries:</div>

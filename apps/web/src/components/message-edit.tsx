@@ -21,9 +21,10 @@ export function MessageEdit({ message, onSave, onCancel, isEditing }: MessageEdi
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(editContent.length, editContent.length);
+      const value = textareaRef.current.value;
+      textareaRef.current.setSelectionRange(value.length, value.length);
     }
-  }, [isEditing, editContent.length]);
+  }, [isEditing]);
 
   const handleSave = useCallback(() => {
     if (editContent.trim() !== message.content.trim() || editFiles.length !== (message.files?.length ?? 0)) {

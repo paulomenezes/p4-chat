@@ -7,7 +7,7 @@ import { type Id } from './_generated/dataModel';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { MODELS } from '../models';
 import { type SessionId } from 'convex-helpers/server/sessions';
-import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { createGoogleGenerativeAI, google, type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
 
 export const streamChat = httpAction(async (ctx, request) => {
@@ -37,12 +37,11 @@ export const streamChat = httpAction(async (ctx, request) => {
 
     if (model === 'openai/gpt-image-1') {
       if (!apiKey?.openaiKey) {
-        await ctx.runMutation(internal.messages.stopStreamingWithError, {
-          streamId,
-          error: 'OpenAI API key is not set',
-        });
-
-        return;
+        // await ctx.runMutation(internal.messages.stopStreamingWithError, {
+        //   streamId,
+        //   error: 'OpenAI API key is not set',
+        // });
+        // return;
       }
 
       try {
@@ -98,36 +97,44 @@ export const streamChat = httpAction(async (ctx, request) => {
 
       if (isSearching) {
         if (!apiKey?.googleKey) {
-          await ctx.runMutation(internal.messages.stopStreamingWithError, {
-            streamId,
-            error: 'Google API key is not set',
+          // await ctx.runMutation(internal.messages.stopStreamingWithError, {
+          //   streamId,
+          //   error: 'Google API key is not set',
+          // });
+
+          // return;
+
+          provider = google('gemini-2.0-flash', {
+            useSearchGrounding: true,
+          });
+        } else {
+          const google = createGoogleGenerativeAI({
+            apiKey: apiKey.googleKey,
           });
 
-          return;
+          provider = google('gemini-2.0-flash', {
+            useSearchGrounding: true,
+          });
         }
-
-        const google = createGoogleGenerativeAI({
-          apiKey: apiKey.googleKey,
-        });
-
-        provider = google('gemini-2.0-flash', {
-          useSearchGrounding: true,
-        });
       } else {
         if (!apiKey?.openRouterKey) {
-          await ctx.runMutation(internal.messages.stopStreamingWithError, {
-            streamId,
-            error: 'OpenRouter API key is not set',
+          // await ctx.runMutation(internal.messages.stopStreamingWithError, {
+          //   streamId,
+          //   error: 'OpenRouter API key is not set',
+          // });
+          // return;
+          const openrouter = createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY,
           });
 
-          return;
+          provider = openrouter(model);
+        } else {
+          const openrouter = createOpenRouter({
+            apiKey: apiKey.openRouterKey,
+          });
+
+          provider = openrouter(model);
         }
-
-        const openrouter = createOpenRouter({
-          apiKey: apiKey.openRouterKey,
-        });
-
-        provider = openrouter(model);
       }
 
       const { fullStream, providerMetadata } = streamText({

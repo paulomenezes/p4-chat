@@ -1,4 +1,4 @@
-import { SidebarInset } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { fetchQuery } from 'convex/nextjs';
@@ -13,6 +13,7 @@ export default async function ChatLayout({
   children: React.ReactNode;
 }>) {
   const sessionId = (await cookies()).get('sessionId')?.value as SessionId | null;
+  const sidebarOpen = (await cookies()).get('sidebarOpen')?.value === 'true';
   const token = { token: await convexAuthNextjsToken() };
 
   const [user, threads] = await Promise.allSettled([
@@ -29,7 +30,9 @@ export default async function ChatLayout({
   ]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="relative" defaultOpen={sidebarOpen}>
+      <SidebarTrigger className="absolute left-4.5 top-4.5 z-50" />
+
       <AppSidebar
         serverUser={user.status === 'fulfilled' ? user.value : null}
         serverThreads={threads.status === 'fulfilled' ? threads.value : []}

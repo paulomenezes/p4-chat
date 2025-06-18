@@ -5,6 +5,7 @@ import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { CodeIcon, GraduationCapIcon, NewspaperIcon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from './ui/button';
 
 const messages = {
   default: ['How does AI work?', 'Are black holes real?', 'How many Rs are in the word "strawberry"?', 'What is the meaning of life? '],
@@ -57,15 +58,15 @@ export function NewChatMessages({
         <h2 className="text-3xl font-semibold">How can I help you{user ? `, ${user.name}` : ''}?</h2>
         <div className="flex flex-row flex-wrap gap-2.5 text-sm max-sm:justify-evenly">
           {Object.entries(categoriesIcons).map(([category, Icon]) => (
-            <button
+            <Button
               key={category}
-              className="justify-center whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-pink-600/90 disabled:hover:bg-primary h-9 flex items-center gap-1 rounded-xl px-5 py-2 font-semibold outline-1 outline-secondary/70 backdrop-blur-xl data-[selected=false]:bg-secondary/30 data-[selected=false]:text-secondary-foreground/90 data-[selected=false]:outline data-[selected=false]:hover:bg-secondary max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full"
-              data-selected={selectedCategory === category}
+              className="rounded-full"
+              variant={selectedCategory === category ? 'default' : 'outline'}
               onClick={() => setSelectedCategory((prev) => (prev === category ? 'default' : category))}
             >
               <Icon className="max-sm:block" />
               <div>{category}</div>
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex flex-col text-foreground">

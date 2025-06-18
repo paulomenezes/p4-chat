@@ -19,6 +19,7 @@ import { useQueryWithStatus } from '@/hooks/use-query';
 import { getModelFromId, getModelName } from '@/lib/utils';
 import { ModelFeatures } from './model-features';
 import { ModelIcon } from './model-icon';
+import { Button } from './ui/button';
 
 export function ModelSelector() {
   const [sessionId] = useSessionId();
@@ -81,13 +82,10 @@ export function ModelSelector() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-8 rounded-md text-xs relative gap-2 px-2 py-1.5 -mb-2 text-muted-foreground"
-          type="button"
-        >
+        <Button variant="secondary" size="xs" className="pl-2 pr-2.5 -mb-1.5" type="button">
           <div className="text-left text-sm font-medium">{getModelName(selectedModel?.name)}</div>
-          <ChevronDownIcon className="right-0 size-4" />
-        </button>
+          <ChevronDownIcon className="right-0 size-4 scale-x-[-1]" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[420px] p-0">
         <Command>
@@ -124,9 +122,6 @@ export function ModelSelector() {
                     <div className="flex items-center gap-2 pr-2 font-medium text-muted-foreground transition-colors">
                       <ModelIcon modelId={model.id} />
                       <span className="w-fit">{getModelName(model.name)}</span>
-                      {/* <button className="p-1.5">
-                        <InfoIcon className="size-3 text-color-heading" />
-                      </button> */}
                     </div>
                     <ModelFeatures model={model} />
                   </div>
@@ -136,19 +131,11 @@ export function ModelSelector() {
           </CommandList>
           <div className="flex items-center justify-end rounded-b-lg bg-popover pb-1 pl-1 pr-2.5 pt-1.5 sm:inset-x-0 relative">
             <div className="absolute inset-x-3 top-0 border-b border-chat-border"></div>
-            {/* <button className="justify-center whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-9 px-4 py-2 flex items-center gap-2 pl-2 text-sm text-muted-foreground">
-              <ChevronUpIcon className="size-4" />
-              Show all
-            </button> */}
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-muted/40 hover:text-foreground disabled:hover:bg-transparent disabled:hover:text-foreground/50 h-8 rounded-md text-xs relative gap-2 px-2 text-muted-foreground"
-                  type="button"
-                >
+                <Button variant="ghost" size="icon" type="button">
                   <FilterIcon className="size-4" />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="right">
                 <DropdownMenuItem onSelect={() => setSelectedFeatures([])}>Clear filters</DropdownMenuItem>

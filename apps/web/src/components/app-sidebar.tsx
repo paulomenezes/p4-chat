@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { LogInIcon, PinIcon, SearchIcon, XIcon } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useQuery } from 'convex-helpers/react/cache/hooks';
 import { api } from '@p4-chat/backend/convex/_generated/api';
@@ -13,6 +13,7 @@ import type { Doc } from '@p4-chat/backend/convex/_generated/dataModel';
 import { ThreadItem } from './thread-item';
 import { useSessionId } from 'convex-helpers/react/sessions';
 import { useQueryWithStatus } from '@/hooks/use-query';
+import { Button, buttonVariants } from './ui/button';
 
 type ThreadsGroup = {
   pinned?: Doc<'threads'>[];
@@ -31,6 +32,8 @@ export function AppSidebar({
   const user = useQuery(api.user.currentUser) ?? serverUser;
   const threads = useQueryWithStatus(api.threads.getByUserIdOrSessionId, sessionId ? { sessionId } : 'skip')?.data ?? serverThreads;
   const [search, setSearch] = useState('');
+
+  const { toggleSidebar } = useSidebar();
 
   const threadsGroups = useMemo(() => {
     if (!threads) {
@@ -74,7 +77,9 @@ export function AppSidebar({
         </h1>
         <div className="px-1">
           <Link
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border-reflect button-reflect rounded-lg bg-[rgb(162,59,103)] p-2 font-semibold text-primary-foreground shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 px-4 py-2 w-full select-none text-sm"
+            className={buttonVariants({
+              className: 'w-full',
+            })}
             href="/"
           >
             <span className="w-full select-none text-center">New Chat</span>
@@ -94,9 +99,14 @@ export function AppSidebar({
             />
 
             {search && (
-              <button className="ml-2 rounded-md p-1 text-muted-foreground hover:bg-muted/40" onClick={() => setSearch('')}>
+              <Button
+                variant="ghost"
+                size="xs"
+                className="ml-2 rounded-md p-1 text-muted-foreground hover:bg-muted/40"
+                onClick={() => setSearch('')}
+              >
                 <XIcon className="size-4" />
-              </button>
+              </Button>
             )}
           </div>
         </div>

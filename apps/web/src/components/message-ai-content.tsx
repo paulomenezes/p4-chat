@@ -7,7 +7,7 @@ export function MessageAIContent({ message }: { message: Doc<'messages'> }) {
     <div
       role="article"
       aria-label="Assistant message"
-      className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
+      className="prose prose-blue max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
     >
       <span className="sr-only">Assistant Reply: </span>
       <Markdown>{sanitizeText(message.content)}</Markdown>
