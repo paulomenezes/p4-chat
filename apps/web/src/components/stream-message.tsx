@@ -78,7 +78,7 @@ export default function ServerMessage({
                 {!hasEnded && <Loader2Icon className="size-4 animate-spin" />}
               </button>
               {isReasoningOpen && (
-                <div className="prose prose-pink max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
+                <div className="prose prose-blue max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
                   <Markdown disableHighlight>{sanitizeText(reasoningContent)}</Markdown>
                 </div>
               )}
@@ -89,7 +89,7 @@ export default function ServerMessage({
         <div
           role="article"
           aria-label="Assistant message"
-          className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
+          className="prose prose-blue max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0"
         >
           {text.length === 0 && status !== 'error' && <>{isImageGenerationModel(message.model) ? <LoadingImage /> : <Loading />}</>}
 

@@ -76,7 +76,7 @@ export function ApiKeys() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Input placeholder="sk-..." type="password" value={openRouterKey} onChange={(e) => setOpenRouterKey(e.target.value)} />
-              <p className="prose prose-pink text-xs text-muted-foreground">
+              <p className="prose prose-blue text-xs text-muted-foreground">
                 Get your API key from the{' '}
                 <a
                   href="https://openrouter.ai/settings/keys"
@@ -124,7 +124,7 @@ export function ApiKeys() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Input placeholder="sk-ant-..." type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} />
-              <p className="prose prose-pink text-xs text-muted-foreground">
+              <p className="prose prose-blue text-xs text-muted-foreground">
                 Get your API key from the{' '}
                 <a
                   href="https://platform.openai.com/api-keys"
@@ -178,7 +178,7 @@ export function ApiKeys() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Input placeholder="sk-ant-..." type="password" value={googleKey} onChange={(e) => setGoogleKey(e.target.value)} />
-              <p className="prose prose-pink text-xs text-muted-foreground">
+              <p className="prose prose-blue text-xs text-muted-foreground">
                 Get your API key from the{' '}
                 <a
                   href="https://console.cloud.google.com/apis/credentials"

@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { setSidebarOpenCookie } from '@/actions/set-sidebar';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -234,7 +235,7 @@ function Sidebar({
 }
 
 function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, open } = useSidebar();
 
   return (
     <Button
@@ -246,6 +247,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();
+        setSidebarOpenCookie(!open);
       }}
       {...props}
     >

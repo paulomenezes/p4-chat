@@ -15,7 +15,7 @@ export function Uploader({
     <div className="flex flex-col gap-2">
       <input {...getInputProps()} className="sr-only" aria-label="Upload image file" />
 
-      <Button size="xs" className="rounded-full pl-2 pr-2.5 -mb-1.5" variant="outline" onClick={openFileDialog}>
+      <Button type="button" size="xs" className="rounded-full pl-2 pr-2.5 -mb-1.5" variant="outline" onClick={openFileDialog}>
         <PaperclipIcon className="h-4 w-4" />
         <span className="max-sm:hidden">Attach</span>
       </Button>

@@ -18,10 +18,12 @@ import { ModeToggle } from './mode-toggle';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import Link from 'next/link';
 import { Button } from './ui/button';
+import { useSidebar } from './ui/sidebar';
+import { cn } from '@/lib/utils';
 
 const ServerMessage = dynamic(() => import('./stream-message'), { ssr: false });
 
-const maxSizeMB = 5;
+const maxSizeMB = 2;
 const maxSize = maxSizeMB * 1024 * 1024; // 5MB default
 const maxFiles = 2;
 
@@ -49,6 +51,8 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const { open } = useSidebar();
 
   useEffect(() => {
     if (!messagesEndRef.current) {
@@ -93,7 +97,14 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
 
   return (
     <div className="firefox-scrollbar-margin-fix min-h-pwa relative flex w-full flex-1 flex-col overflow-hidden transition-[width,height]">
-      <div className="absolute bottom-0 top-0 w-full overflow-hidden border-l border-t border-chat-border bg-chat-background bg-fixed pb-[140px] transition-all ease-snappy max-sm:border-none sm:translate-y-3.5 sm:rounded-tl-xl">
+      <div
+        className={cn(
+          'absolute bottom-0 top-0 w-full overflow-hidden border-l border-t border-chat-border bg-chat-background bg-fixed pb-[140px] transition-all ease-snappy max-sm:border-none sm:translate-y-3.5',
+          {
+            'sm:rounded-tl-xl': open,
+          },
+        )}
+      >
         <div className="bg-noise absolute inset-0 -top-3.5 bg-fixed transition-transform ease-snappy [background-position:right_bottom]"></div>
       </div>
       <div className="absolute inset-x-3 top-0 z-10 box-content overflow-hidden border-b border-chat-border bg-gradient-noise-top/80 backdrop-blur-md transition-[transform,border] ease-snappy blur-fallback:bg-gradient-noise-top max-sm:hidden sm:h-3.5">
@@ -102,53 +113,18 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
         <div className="absolute right-0 top-0 h-full w-24 bg-gradient-noise-top blur-fallback:hidden"></div>
       </div>
       <div className="absolute bottom-0 top-0 w-full">
-        <div className="fixed right-0 top-0 max-sm:hidden">
-          <div className="group pointer-events-none absolute top-3.5 z-10 -mb-8 h-32 w-full origin-top transition-all ease-snappy">
-            <svg
-              className="absolute -right-8 h-9 origin-top-left skew-x-[30deg] overflow-visible"
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              xmlnsXlink="http://www.w3.org/1999/xlink"
-              viewBox="0 0 128 32"
-              xmlSpace="preserve"
-            >
-              <line
-                stroke="var(--gradient-noise-top)"
-                strokeWidth="2px"
-                shapeRendering="optimizeQuality"
-                vectorEffect="non-scaling-stroke"
-                strokeLinecap="round"
-                strokeMiterlimit="10"
-                x1="1"
-                y1="0"
-                x2="128"
-                y2="0"
-              ></line>
-              <path
-                stroke="var(--chat-border)"
-                className="translate-y-[0.5px]"
-                fill="var(--gradient-noise-top)"
-                shapeRendering="optimizeQuality"
-                strokeWidth="1px"
-                strokeLinecap="round"
-                strokeMiterlimit="10"
-                vectorEffect="non-scaling-stroke"
-                d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
-              ></path>
-            </svg>
-          </div>
-        </div>
         <div className="pointer-events-none absolute bottom-0 z-10 w-full px-2">
           <div className="relative mx-auto flex w-full max-w-3xl flex-col text-center">
             <div className="flex justify-center pb-4">
               {!isIntersecting && !!messages?.data?.length && (
-                <button
-                  className="justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:hover:bg-secondary/50 h-8 px-3 text-xs pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-(--chat-overlay) text-secondary-foreground/70 backdrop-blur-xl hover:bg-secondary"
+                <Button
+                  variant="secondary"
+                  className="rounded-full border border-secondary/40 bg-(--chat-overlay) text-secondary-foreground/70 backdrop-blur-xl hover:bg-secondary pointer-events-auto"
                   onClick={scrollToBottom}
                 >
                   <span className="pb-0.5">Scroll to bottom</span>
                   <ChevronDownIcon className="size-4 -mr-1" />
-                </button>
+                </Button>
               )}
             </div>
             <div className="pointer-events-none">
@@ -219,54 +195,15 @@ export function Chat({ serverUser, serverSessionId }: { serverUser: Doc<'users'>
           }}
           ref={messageContainerRef}
         >
-          <div className="fixed right-0 top-0 z-20 h-16 w-28 max-sm:hidden">
-            <div
-              className="group pointer-events-none absolute top-3.5 z-10 -mb-8 h-32 w-full origin-top transition-all ease-snappy"
-              style={{
-                boxShadow: '10px -10px 8px 2px var(--gradient-noise-top)',
-              }}
-            >
-              <svg
-                className="absolute -right-8 h-9 origin-top-left skew-x-[30deg] overflow-visible"
-                version="1.1"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
-                viewBox="0 0 128 32"
-                xmlSpace="preserve"
-              >
-                <line
-                  stroke="var(--gradient-noise-top)"
-                  strokeWidth="2px"
-                  shapeRendering="optimizeQuality"
-                  vectorEffect="non-scaling-stroke"
-                  strokeLinecap="round"
-                  strokeMiterlimit="10"
-                  x1="1"
-                  y1="0"
-                  x2="128"
-                  y2="0"
-                ></line>
-                <path
-                  stroke="var(--chat-border)"
-                  className="translate-y-[0.5px]"
-                  fill="var(--gradient-noise-top)"
-                  shapeRendering="optimizeQuality"
-                  strokeWidth="1px"
-                  strokeLinecap="round"
-                  strokeMiterlimit="10"
-                  vectorEffect="non-scaling-stroke"
-                  d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
-                ></path>
-              </svg>
-            </div>
-          </div>
-          <div className="fixed right-2 top-2 z-20 max-sm:hidden">
+          <div className="fixed right-2 top-5 z-20 max-sm:hidden">
             <div className="flex flex-row items-center bg-gradient-noise-top text-muted-foreground gap-0.5 rounded-md p-1 transition-all rounded-bl-xl">
-              <Link aria-label="Go to settings" href="/settings">
-                <Button variant="ghost" size="icon" type="button">
-                  <Settings2Icon className="size-4" />
-                </Button>
-              </Link>
+              {serverUser && (
+                <Link aria-label="Go to settings" href="/settings">
+                  <Button variant="ghost" size="icon" type="button">
+                    <Settings2Icon className="size-4" />
+                  </Button>
+                </Link>
+              )}
 
               <ModeToggle />
             </div>

@@ -21,7 +21,7 @@ export function MessageReasoning({ message }: { message: Doc<'messages'> }) {
               Reasoning
             </button>
             {isReasoningOpen && (
-              <div className="prose prose-pink max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
+              <div className="prose prose-blue max-w-none rounded-lg bg-sidebar-background/40 p-3 opacity-80 dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 dark:bg-chat-accent">
                 <Markdown>{sanitizeText(message.reasoning)}</Markdown>
               </div>
             )}

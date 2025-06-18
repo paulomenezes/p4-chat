@@ -76,7 +76,7 @@ function UserMessage({
           <MessageEdit message={message} onSave={handleSave} onCancel={handleCancel} isEditing={isEditing} />
         ) : (
           <>
-            <div className="prose prose-pink max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0">
+            <div className="prose prose-blue max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0">
               <Markdown>{sanitizeText(message.content)}</Markdown>
             </div>
             <MessageFiles files={message.files ?? []} />

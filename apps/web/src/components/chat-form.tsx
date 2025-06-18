@@ -10,6 +10,7 @@ import { Uploader } from './uploader';
 import { UploaderFileList } from './uploader-file-list';
 import type { InputHTMLAttributes } from 'react';
 import type { FileWithPreview } from '@/hooks/use-file-upload';
+import { useMemo } from 'react';
 
 export function ChatForm({
   input,
@@ -45,6 +46,10 @@ export function ChatForm({
 }) {
   const stopStreaming = useMutation(api.messages.stopStreaming);
 
+  const hasSomeFileLoading = useMemo(() => {
+    return files.some((file) => file.isLoading);
+  }, [files]);
+
   return (
     <div>
       <form
@@ -71,7 +76,7 @@ export function ChatForm({
               onBlur={handleInputChange}
               onChange={handleInputChange}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !hasSomeFileLoading) {
                   e.preventDefault();
                   handleSubmit();
                 }
@@ -83,10 +88,10 @@ export function ChatForm({
           </div>
           <div className="-mb-px mt-2 flex w-full flex-row-reverse justify-between">
             <div className="-mr-0.5 -mt-0.5 flex items-center justify-center gap-2" aria-label="Message actions">
-              <button
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border-reflect button-reflect bg-[rgb(162,59,103)] font-semibold shadow hover:bg-[#d56698] active:bg-[rgb(162,59,103)] disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 h-9 w-9 relative rounded-lg p-2 text-pink-50"
+              <Button
+                size="icon"
                 type="submit"
-                disabled={input.length === 0 && !currentStreamId}
+                disabled={(input.length === 0 && !currentStreamId) || hasSomeFileLoading}
                 aria-label="Message requires text"
                 data-state="closed"
                 onClick={() => {
@@ -96,7 +101,7 @@ export function ChatForm({
                 }}
               >
                 {currentStreamId ? <SquareIcon className="!size-5 fill-current" /> : <ArrowUpIcon className="!size-5" />}
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
@@ -105,11 +110,12 @@ export function ChatForm({
 
                 <Button
                   size="xs"
+                  type="button"
                   className="rounded-full pl-2 pr-2.5 -mb-1.5"
                   variant={isSearching ? 'default' : 'outline'}
                   onClick={() => setIsSearching(!isSearching)}
                 >
-                  <GlobeIcon className="h-4 w-4 scale-x-[-1]" />
+                  <GlobeIcon className="size-4 scale-x-[-1]" />
                   <span className="max-sm:hidden">Search</span>
                 </Button>
 
