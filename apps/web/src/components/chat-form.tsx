@@ -100,6 +100,7 @@ export function ChatForm({
       sessionId,
       isSearching,
       files: files.map((file) => file.storageId).filter((storageId) => storageId !== undefined),
+      model: currentModel,
     });
 
     setChatId(threadId);
@@ -144,8 +145,10 @@ export function ChatForm({
   useEffect(() => {
     if (thread) {
       setCurrentModel(thread.model ?? selectedModel.id);
+    } else if (userConfig) {
+      setCurrentModel(userConfig.data?.currentlySelectedModel ?? selectedModel.id);
     }
-  }, [thread, selectedModel.id]);
+  }, [thread, userConfig, selectedModel.id]);
 
   return (
     <div>

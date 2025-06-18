@@ -110,13 +110,13 @@ export function ModelSelector({ currentModel, setCurrentModel }: { currentModel:
                         id: userConfig?.data?._id,
                         currentlySelectedModel: currentValue,
                         sessionId,
-                        threadId: chatId as Id<'threads'> | undefined,
+                        threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
                       });
                     } else {
                       updateCurrentlySelectedModel({
                         currentlySelectedModel: currentValue,
                         sessionId,
-                        threadId: chatId as Id<'threads'> | undefined,
+                        threadId: (chatId ?? undefined) as Id<'threads'> | undefined,
                       });
                     }
 

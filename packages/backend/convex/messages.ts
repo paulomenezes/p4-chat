@@ -4,7 +4,6 @@ import { streamingComponent } from './streaming';
 import { type StreamId } from '@convex-dev/persistent-text-streaming';
 import { api, internal } from './_generated/api';
 import { mutationWithSession, queryWithSession } from './utils';
-import { MODELS } from '../models';
 import { type GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
 import { type Doc, type Id } from './_generated/dataModel';
 
@@ -32,25 +31,18 @@ export const sendMessage = mutationWithSession({
     threadId: v.optional(v.id('threads')),
     isSearching: v.boolean(),
     files: v.optional(v.array(v.id('_storage'))),
+    model: v.string(),
   },
   handler: async (ctx, args) => {
     const userId = ctx.userId;
     const responseStreamId = await streamingComponent.createStream(ctx);
 
-    const userConfig = await ctx.db
-      .query('userConfig')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .first();
-
-    const model = userConfig?.currentlySelectedModel ?? MODELS[0].id;
-
     let threadId = args.threadId;
-    let isNewThread = false;
     if (!args.threadId) {
       const thread = await ctx.db.insert('threads', {
         title: '',
         userId,
-        model,
+        model: args.model,
       });
 
       await ctx.scheduler.runAfter(0, internal.threads.generateThreadTitle, {
@@ -59,17 +51,10 @@ export const sendMessage = mutationWithSession({
       });
 
       threadId = thread;
-      isNewThread = true;
     }
 
     if (!threadId) {
       throw new Error('Thread not found');
-    }
-
-    if (!isNewThread) {
-      await ctx.db.patch(threadId, {
-        model,
-      });
     }
 
     const messageId = await ctx.db.insert('messages', {
@@ -78,7 +63,7 @@ export const sendMessage = mutationWithSession({
       role: 'user',
       userId,
       responseStreamId,
-      model,
+      model: args.model,
       isSearching: args.isSearching,
       files: args.files,
     });
